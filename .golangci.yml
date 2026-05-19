@@ -1,0 +1,82 @@
+version: "2"
+run:
+  tests: true
+linters:
+  enable:
+    - copyloopvar
+    - errname
+    - errorlint
+    - exhaustive
+    - exhaustruct
+    - exptostd
+    - gocritic
+    - godot
+    - importas
+    - iotamixing
+    - misspell
+    - modernize
+    - nakedret
+    - nilnesserr
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - revive
+    - testifylint
+    - unconvert
+    - usetesting
+  settings:
+    exhaustruct:
+      exclude:
+        - net/http\..+
+        - crypto/tls\..+
+        - encoding/xml\..+
+        - .+/checks\.badMatcher
+        - .+/checks\..+Settings
+        - .+/config\.Match
+        - .+/discovery\.Entry
+        - .+/parser\.Rule
+        - .+/parser\.ParseError
+        - .+/parser\.VectorSelector
+        - .+/promapi\.MetricTimeRange
+        - github.com/prometheus/.+\..+
+        - github.com/urfave/cli/.+
+        - gitlab.com/gitlab-org/api/.+
+        - github.com/google/go-github/.+
+        - github.com/hashicorp/hcl/.+
+        - github.com/aws/aws-sdk-go-v2/.+\..+
+        - github.com/golang-jwt/jwt/v5\..+
+        - github.com/ory/dockertest/.+\..+
+        - github.com/sirupsen/logrus\..+
+    errcheck:
+      exclude-functions:
+        - (*database/sql.Tx).Rollback
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - std-error-handling
+    rules:
+      - linters:
+          - exhaustruct
+        path: ".*_test\\.go"
+      - linters:
+          - exhaustruct
+        path: ".*(testassets|infra/test)/.*"
+      - linters:
+          - exhaustruct
+        path: ".*/repository/.*"
+      - linters:
+          - revive
+        path: "(internal/adapter/db/postgres/db|infra/test/docker_db)\\.go"
+        text: "blank-imports"
+issues:
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofumpt
+    - goimports
