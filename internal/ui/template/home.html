@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edu Planner</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header id="main-header" class="hidden">
+        <div class="tabs">
+            <div class="tab" onclick="switchTab('home')">Головна</div>
+            <div class="tab" onclick="switchTab('reference')">Довідкові дані</div>
+        </div>
+        <div class="user-controls">
+            <select id="academic-year-select">
+                <option value="">Оберіть рік...</option>
+            </select>
+            <button onclick="logout()">Вийти</button>
+        </div>
+    </header>
+
+    <div id="login-container">
+        <h2>Вхід</h2>
+        <div class="form-group">
+            <input type="text" id="username" placeholder="Логін">
+        </div>
+        <div class="form-group">
+            <input type="password" id="password" placeholder="Пароль">
+        </div>
+        <button onclick="login()">Увійти</button>
+    </div>
+
+    <div id="app" class="hidden">
+        <div id="home-tab">
+            <h1>Welcome to Edu Planner</h1>
+            <p>This is the home page.</p>
+        </div>
+
+        <div id="reference-tab" class="hidden">
+            <h2>Довідкові дані</h2>
+            <div>
+                <h3>Створити Академічний Рік</h3>
+                <input type="text" id="new-academic-year" placeholder="напр: 2026-2027">
+                <button onclick="createAcademicYear()">Зберегти</button>
+            </div>
+            <div style="margin-top:20px;">
+                <ul id="academic-years-list"></ul>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

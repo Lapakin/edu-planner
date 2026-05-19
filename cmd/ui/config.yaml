@@ -1,0 +1,9 @@
+addr: ":8080"
+
+logging:
+  level: "trace"
+  formatter: "PrettyFormatter"
+
+ui:
+  syllabus: "http://edu-planner-syllabus:3302/api/v1"
+  user-management: "http://edu-planner-user-management:3301/api/v1"
