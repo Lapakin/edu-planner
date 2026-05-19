@@ -1,0 +1,25 @@
+addr: ":3302"
+
+db:
+  host: edu-planner-syllabus-postgres
+  port: 5432
+  database: syllabus
+  ssl_mode: disable
+  isolation_level: "ReadCommitted"
+
+logging:
+  level: "trace"
+  formatter: "PrettyFormatter"
+
+jwt:
+  secret: "secret-key-123"
+  expire_minutes: 60
+
+sqs:
+  queue_name: "syllabus-message-queue"
+  endpoint: "http://localstack:4566"
+  region: "us-east-1"
+
+schedule_generation:
+  timeout_seconds: 120
+  number_of_goroutines: 4

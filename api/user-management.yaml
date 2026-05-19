@@ -1,0 +1,505 @@
+openapi: 3.1.0
+info:
+  title: user-management service
+  description: API for managing user accounts and profiles
+  version: 1.0.0
+servers:
+  - url: http://localhost:3301/api/v1
+paths:
+  /auth/invite:
+    post:
+      tags:
+        - Auth
+      summary: Create user and generate invite link (admin only)
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteReq'
+      responses:
+        '200':
+          description: Invite created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteResp'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /set-password:
+    post:
+      tags:
+        - Auth
+      summary: Set password using invite token (no auth required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPasswordReq'
+      responses:
+        '200':
+          description: Password set, JWT returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: Invite link expired or already used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /login:
+    post:
+      tags:
+        - Auth
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginReq'
+      responses:
+        '200':
+          description: Successful login, JWT returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - User
+      summary: Get user by ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - User
+      summary: Create users (batch, internal use)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - User
+      summary: Fetch users
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+          required: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - User
+      summary: Update users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - User
+      summary: Soft-delete users by ID list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successfully deleted
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{userId}/activate:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - User
+      summary: Activate a user account
+      responses:
+        '200':
+          description: Successfully activated
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{userId}/deactivate:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - User
+      summary: Deactivate a user account
+      responses:
+        '200':
+          description: Successfully deactivated
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{userId}/reset-invite:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - Auth
+      summary: Generate new invite link for existing user (admin only, password reset)
+      responses:
+        '200':
+          description: New invite link generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteResp'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  parameters:
+    Authorization:
+      name: Authorization
+      in: header
+      schema:
+        type: string
+        example: 'Bearer <token>'
+      required: true
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        patronymic:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [admin, dean, teacher]
+        is_active:
+          type: boolean
+          readOnly: true
+        is_deleted:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        modified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+        - email
+        - first_name
+        - last_name
+        - role
+
+    InviteReq:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        patronymic:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [admin, dean, teacher]
+      required:
+        - email
+        - first_name
+        - last_name
+
+    InviteResp:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        invite_link:
+          type: string
+          description: Relative URL the admin shares with the user
+          example: /set-password?token=abc123
+
+    SetPasswordReq:
+      type: object
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          format: password
+      required:
+        - token
+        - password
+
+    LoginReq:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      required:
+        - email
+        - password

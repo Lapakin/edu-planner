@@ -1,0 +1,168 @@
+name: edu-planner
+
+services:
+
+  # ── Databases ────────────────────────────────────────────────────────────────
+
+  edu-planner-user-management-postgres:
+    image: postgres:15
+    container_name: edu-planner-user-management-postgres
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=user_management
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d user_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  edu-planner-syllabus-postgres:
+    image: postgres:15
+    container_name: edu-planner-syllabus-postgres
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=syllabus
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d syllabus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── LocalStack ───────────────────────────────────────────────────────────────
+
+  localstack:
+    container_name: localstack
+    image: localstack/localstack:3.3
+    ports:
+      - "4566:4566"
+    environment:
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    volumes:
+      - "./hack/scripts/init-localstack.sh:/etc/localstack/init/ready.d/init-localstack.sh"
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
+
+  # ── RBAC Bootstrap ───────────────────────────────────────────────────────────
+
+  rbacgen:
+    image: edu-planner-rbacgen
+    build:
+      context: .
+      dockerfile: cmd/rbacgen/Dockerfile
+    container_name: edu-planner-rbacgen
+    env_file:
+      - .env
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=edu-planner-user-management-postgres
+    depends_on:
+      edu-planner-user-management-postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ── Application Services ─────────────────────────────────────────────────────
+
+  edu-planner-user-management:
+    image: edu-planner-user-management
+    build:
+      context: .
+      dockerfile: cmd/user-management/Dockerfile
+    container_name: edu-planner-user-management
+    env_file:
+      - .env
+    command:
+      - "-config"
+      - "/app/config.yaml"
+    ports:
+      - "3301:3301"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      rbacgen:
+        condition: service_completed_successfully
+      localstack:
+        condition: service_healthy
+    volumes:
+      - ./cmd/user-management/config.yaml:/app/config.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3301/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  edu-planner-syllabus:
+    image: edu-planner-syllabus
+    build:
+      context: .
+      dockerfile: cmd/syllabus/Dockerfile
+    container_name: edu-planner-syllabus
+    env_file:
+      - .env
+    command:
+      - "-config"
+      - "/app/config.yaml"
+    ports:
+      - "3302:3302"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      edu-planner-syllabus-postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    volumes:
+      - ./cmd/syllabus/config.yaml:/app/config.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3302/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  edu-planner-ui:
+    image: edu-planner-ui
+    build:
+      context: .
+      dockerfile: cmd/ui/Dockerfile
+    container_name: edu-planner-ui
+    command:
+      - "-config"
+      - "/app/config.yaml"
+    ports:
+      - "8080:8080"
+    depends_on:
+      edu-planner-user-management:
+        condition: service_healthy
+      edu-planner-syllabus:
+        condition: service_healthy
+    volumes:
+      - ./cmd/ui/config.yaml:/app/config.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

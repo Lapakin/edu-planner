@@ -1,0 +1,21 @@
+addr: ":3301"
+
+db:
+  host: edu-planner-user-management-postgres
+  port: 5432
+  database: user_management
+  ssl_mode: disable
+  isolation_level: "ReadCommitted"
+
+logging:
+  level: "trace"
+  formatter: "PrettyFormatter"
+
+sqs:
+  queue_name: "user-management-queue"
+  endpoint: "http://localstack:4566"
+  region: "us-east-1"
+
+jwt:
+  secret: "secret-key-123"
+  expire_minutes: 60

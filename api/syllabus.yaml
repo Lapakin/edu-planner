@@ -1,0 +1,3687 @@
+openapi: 3.1.0
+info:
+  title: syllabus service
+  description: API for managing reference data for schedules
+  version: 1.0.0
+servers:
+  - url: http://localhost:3302/api/v1
+paths:
+  /academic-years/{academicYearId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: academicYearId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Academic Years
+      summary: Get academic year by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcademicYear'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /academic-years:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Academic Years
+      summary: Create new academic year
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/AcademicYear'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AcademicYear'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Academic Years
+      summary: Fetch academic years
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+          description: Only academic years with these ids will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AcademicYear'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Academic Years
+      summary: Update academic years
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/AcademicYear'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AcademicYear'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /academic-years/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Academic Years
+      summary: Soft delete academic years
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /academic-years/{academicYearId}/activate:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: academicYearId
+        in: path
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - Academic Years
+      summary: Activate academic year
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcademicYear'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /academic-years/{academicYearId}/deactivate:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: academicYearId
+        in: path
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - Academic Years
+      summary: Deactivate academic year
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcademicYear'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /semesters/{semesterId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: semesterId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Semesters
+      summary: Get semester by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Semester'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /semesters:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Semesters
+      summary: Create new semester
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Semester'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Semester'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Semesters
+      summary: Fetch semesters
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+          description: Only semesters with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only semesters for this academic year will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Semester'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Semesters
+      summary: Update semesters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Semester'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Semester'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /semesters/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Semesters
+      summary: Soft delete semesters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /departments/{departmentId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: departmentId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Departments
+      summary: Get department by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /departments:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Departments
+      summary: Create new department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Department'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Department'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Departments
+      summary: Fetch departments
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+            example: 1,2,3
+          required: false
+          description: Only departments with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only departments for this academic year will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Department'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Departments
+      summary: Update departments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Department'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Department'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /departments/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Departments
+      summary: Soft delete departments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rooms/{roomId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: roomId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Rooms
+      summary: Get room by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rooms:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Rooms
+      summary: Create new room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Room'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Rooms
+      summary: Fetch rooms
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+            example: 1,2,3
+          required: false
+          description: Only rooms with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only rooms for this academic year will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Rooms
+      summary: Update rooms
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Room'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rooms/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Rooms
+      summary: Soft delete rooms
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /specialties/{specialtyId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: specialtyId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Specialties
+      summary: Get specialty by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Specialty'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /specialties:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Specialties
+      summary: Create new specialty
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Specialty'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Specialty'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Specialties
+      summary: Fetch specialties
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+          description: Only specialties with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only specialties for this academic year will be returned
+        - name: department_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only specialties for this department will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Specialty'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Specialties
+      summary: Update specialties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Specialty'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Specialty'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /specialties/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Specialties
+      summary: Soft delete specialties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cycle-committees/{cycleCommitteeId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: cycleCommitteeId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Cycle Committees
+      summary: Get cycle committee by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleCommittee'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cycle-committees:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Cycle Committees
+      summary: Create new cycle committee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CycleCommittee'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CycleCommittee'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Cycle Committees
+      summary: Fetch cycle committees
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+          description: Only cycle committees with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only cycle committees for this academic year will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CycleCommittee'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Cycle Committees
+      summary: Update cycle committees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CycleCommittee'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CycleCommittee'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cycle-committees/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Cycle Committees
+      summary: Soft delete cycle committees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /teachers/{teacherId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: teacherId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Teachers
+      summary: Get teacher by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Teacher'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /teachers:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Teachers
+      summary: Create new teacher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Teacher'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Teacher'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Teachers
+      summary: Fetch teachers
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+            example: 1,2,3
+          required: false
+          description: Only teachers with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only teachers for this academic year will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Teacher'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Teachers
+      summary: Update teachers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Teacher'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Teacher'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /teachers/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Teachers
+      summary: Soft delete teachers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /disciplines/{disciplineId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: disciplineId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Disciplines
+      summary: Get discipline by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discipline'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /disciplines:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Disciplines
+      summary: Create new discipline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Discipline'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Discipline'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Disciplines
+      summary: Fetch disciplines
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+            example: 1,2,3
+          required: false
+          description: Only disciplines with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only disciplines for this academic year will be returned
+        - name: cycle_committee_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only disciplines for this cycle committee will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Teacher'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Disciplines
+      summary: Update disciplines
+      requestBody:
+        required: true
+        content:
+        application/json:
+          schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/Discipline'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Discipline'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /disciplines/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Disciplines
+      summary: Soft delete disciplines
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{groupId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: groupId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Groups
+      summary: Get group by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Groups
+      summary: Create new group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Group'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Groups
+      summary: Fetch groups
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+            example: 1,2,3
+          required: false
+          description: Only groups with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only groups for this academic year will be returned
+        - name: specialty_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only groups for this specialty will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Groups
+      summary: Update groups
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Group'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Groups
+      summary: Soft delete groups
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/semesters/{groupSemesterId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: groupSemesterId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Groups
+      summary: Get group semester by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupSemester'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/semesters:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Groups
+      summary: Create new group semester
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/GroupSemester'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupSemester'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Groups
+      summary: Fetch group semesters
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+            example: 1,2,3
+          required: false
+          description: Only group semesters with these ids will be returned
+        - name: group_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only group semesters for this group will be returned
+        - name: semester_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only group semesters for this semester will be returned
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+            schema:
+              type: array
+              items:
+              $ref: '#/components/schemas/GroupSemester'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Groups
+      summary: Update group semesters
+      requestBody:
+        required: true
+        content:
+        application/json:
+          schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupSemester'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+            schema:
+              type: array
+              items:
+              $ref: '#/components/schemas/GroupSemester'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+  /groups/semesters/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Groups
+      summary: Soft delete group semesters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /study-plans/{studyPlanId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: studyPlanId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Study Plans
+      summary: Get study plan by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudyPlan'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /study-plans:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Study Plans
+      summary: Create new study plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/StudyPlan'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudyPlan'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Study Plans
+      summary: Fetch study plans
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+          description: Only study plans with these ids will be returned
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+          description: Only study plans for this academic year will be returned
+        - name: specialty_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+        - name: discipline_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudyPlan'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Study Plans
+      summary: Update study plans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/StudyPlan'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudyPlan'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /study-plans/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Study Plans
+      summary: Soft delete study plans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workload-distributions/{workloadDistributionId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: workloadDistributionId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Workload Distributions
+      summary: Get workload distribution by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadDistribution'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workload-distributions:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Workload Distributions
+      summary: Create new workload distribution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkloadDistribution'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkloadDistribution'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Workload Distributions
+      summary: Fetch workload distributions
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+        - name: study_plan_id
+          in: query
+          schema:
+            type: integer
+          required: false
+        - name: group_id
+          in: query
+          schema:
+            type: integer
+          required: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkloadDistribution'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Workload Distributions
+      summary: Update workload distributions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkloadDistribution'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkloadDistribution'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workload-distributions/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Workload Distributions
+      summary: Soft delete workload distributions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workload-assignments/{workloadAssignmentId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: workloadAssignmentId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Workload Assignments
+      summary: Get workload assignment by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadAssignment'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workload-assignments:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Workload Assignments
+      summary: Create new workload assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkloadAssignment'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkloadAssignment'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Workload Assignments
+      summary: Fetch workload assignments
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+        - name: workload_distribution_id
+          in: query
+          schema:
+            type: integer
+          required: false
+        - name: teacher_id
+          in: query
+          schema:
+            type: integer
+          required: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkloadAssignment'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Workload Assignments
+      summary: Update workload assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkloadAssignment'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkloadAssignment'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workload-assignments/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Workload Assignments
+      summary: Delete workload assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /schedule-template-settings/{scheduleTemplateSettingId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: scheduleTemplateSettingId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Schedule Template Settings
+      summary: Get schedule template setting by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleTemplateSetting'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /schedule-template-settings:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Schedule Template Settings
+      summary: Create new schedule template setting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ScheduleTemplateSetting'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleTemplateSetting'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Schedule Template Settings
+      summary: Fetch schedule template settings
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleTemplateSetting'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Schedule Template Settings
+      summary: Update schedule template settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ScheduleTemplateSetting'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleTemplateSetting'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /schedule-template-settings/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Schedule Template Settings
+      summary: Delete schedule template settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /schedule-restrictions/{scheduleRestrictionId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: scheduleRestrictionId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Schedule Restrictions
+      summary: Get schedule restriction by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleRestriction'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /schedule-restrictions:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Schedule Restrictions
+      summary: Create schedule restrictions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ScheduleRestriction'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleRestriction'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Schedule Restrictions
+      summary: Fetch schedule restrictions
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleRestriction'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Schedule Restrictions
+      summary: Update schedule restrictions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ScheduleRestriction'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleRestriction'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /schedule-restrictions/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Schedule Restrictions
+      summary: Delete schedule restrictions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bell-schedules/{bellScheduleId}:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - name: bellScheduleId
+        in: path
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - Bell Schedules
+      summary: Get bell schedule by id
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BellSchedule'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bell-schedules:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Bell Schedules
+      summary: Create new bell schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BellSchedule'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BellSchedule'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Bell Schedules
+      summary: Fetch bell schedules
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          required: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BellSchedule'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Bell Schedules
+      summary: Update bell schedules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BellSchedule'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BellSchedule'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bell-schedules/delete:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - Bell Schedules
+      summary: Delete bell schedules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  parameters:
+    Authorization:
+      name: token
+      in: header
+      schema:
+        type: string
+        format: string
+      required: true
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Status code
+        message:
+          type: string
+          description: Error description
+
+    AcademicYear:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        name:
+          type: string
+        date_start:
+          type: string
+          format: date
+          example: '2024-09-01'
+        date_end:
+          type: string
+          format: date
+          example: '2025-06-30'
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - name
+        - date_start
+        - date_end
+
+    Semester:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        period_start:
+          type: string
+          format: date
+          example: '2024-09-01'
+        period_end:
+          type: string
+          format: date
+          example: '2025-06-30'
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - period_start
+        - period_end
+
+    Department:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - name
+
+    Room:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        name:
+          type: string
+        room_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - name
+        - room_type
+
+    Specialty:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        department_id:
+          type: integer
+        name:
+          type: string
+        short_name:
+          type: string
+        specialty_code:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - department_id
+        - name
+        - short_name
+        - specialty_code
+
+    CycleCommittee:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        user_id:
+          type: integer
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - user_id
+        - name
+
+    Teacher:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        user_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - user_id
+
+    Discipline:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        cycle_committee_id:
+          type: integer
+        name:
+          type: string
+        short_name:
+          type: string
+        is_splitting:
+          type: boolean
+        is_subvention:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - cycle_committee_id
+        - name
+        - short_name
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        specialty_id:
+          type: integer
+        name:
+          type: string
+        short_name:
+          type: string
+        is_contract:
+          type: boolean
+        is_splitting:
+          type: boolean
+        education_start:
+          type: string
+          format: date
+          example: '2024-09-01'
+        education_end:
+          type: string
+          format: date
+          example: '2025-06-30'
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - specialty_id
+        - name
+        - short_name
+        - education_start
+        - education_end
+
+    GroupSemester:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        group_id:
+          type: integer
+        semester_id:
+          type: integer
+        start_date:
+          type: string
+          format: date
+          example: '2024-09-01'
+        end_date:
+          type: string
+          format: date
+          example: '2025-06-30'
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - group_id
+        - semester_id
+        - start_date
+        - end_date
+    
+    StudyPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          readonly: true
+        academic_year_id:
+          type: integer
+        specialty_id:
+          type: integer
+        discipline_id:
+          type: integer
+        educational_component:
+          type: string
+        okr:
+          type: integer
+        coursework_type:
+          type: string
+        classroom_work:
+          type: integer
+        lectures:
+          type: integer
+        laboratory:
+          type: integer
+        practical:
+          type: integer
+        independent_work:
+          type: integer
+        individual_lessons:
+          type: integer
+        consultations:
+          type: integer
+        exam:
+          type: integer
+        practice:
+          type: integer
+        coursework_hours:
+          type: integer
+        classroom_coursework:
+          type: integer
+        assisting_hours:
+          type: integer
+        semester_number:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readonly: true
+          example: '2024-06-01T12:00:00Z'
+        modified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          example: '2024-06-01T12:00:00Z'
+      required:
+        - academic_year_id
+        - specialty_id
+        - discipline_id
+        - educational_component
+        - okr
+        - coursework_type
+        - classroom_work
+        - lectures
+        - semester_number
+
+    WorkloadDistribution:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        study_plan_id:
+          type: integer
+        group_id:
+          type: integer
+        coursework_type:
+          type: string
+        coursework_hours:
+          type: integer
+        classroom_coursework:
+          type: integer
+        classroom_work:
+          type: integer
+        laboratory:
+          type: integer
+        practical:
+          type: integer
+        exam:
+          type: integer
+        consultations:
+          type: integer
+        credit:
+          type: integer
+        practice:
+          type: integer
+        okr:
+          type: integer
+        individual_lessons:
+          type: integer
+        deductions:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        modified_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - study_plan_id
+        - group_id
+
+    WorkloadAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        workload_distribution_id:
+          type: integer
+        teacher_id:
+          type: integer
+        role_type:
+          type: string
+        assigned_hours:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - workload_distribution_id
+        - teacher_id
+
+    ScheduleTemplateSetting:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        hours_per_lesson:
+          type: number
+          format: float
+        max_identical_lessons_per_day:
+          type: integer
+        max_study_hours_per_day:
+          type: integer
+        max_teacher_hours_per_week:
+          type: integer
+        max_group_lesson_hours_per_week:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        modified_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - hours_per_lesson
+        - max_identical_lessons_per_day
+        - max_study_hours_per_day
+        - max_teacher_hours_per_week
+
+    ScheduleRestriction:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        min_group_lessons_per_day:
+          type: integer
+          description: Minimum number of lessons a group must have on any day they are scheduled (default 2)
+          default: 2
+        max_group_lessons_per_day:
+          type: integer
+          description: Maximum number of lessons a group can have per day (default 4)
+          default: 4
+        max_teacher_lessons_per_day:
+          type: integer
+          description: Maximum number of lessons a teacher can have per day (default 5)
+          default: 5
+        no_gaps_in_group_schedule:
+          type: boolean
+          description: If true, a group's lessons on any given day must be consecutive with no gaps (default true)
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        modified_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - min_group_lessons_per_day
+        - max_group_lessons_per_day
+        - max_teacher_lessons_per_day
+        - no_gaps_in_group_schedule
+
+    BellSchedule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        lesson_number:
+          type: integer
+        start_time:
+          type: string
+          example: "08:00:00"
+        end_time:
+          type: string
+          example: "09:30:00"
+      required:
+        - lesson_number
+        - start_time
+        - end_time
