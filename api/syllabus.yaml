@@ -3035,27 +3035,33 @@ paths:
           schema:
             type: string
           required: false
+        - name: academic_year_id
+          in: query
+          schema:
+            type: integer
+            example: 1
+          required: false
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/BellSchedule'
-        '400':
+                  $ref: "#/components/schemas/BellSchedule"
+        "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
     put:
       tags:
         - Bell Schedules
@@ -3673,6 +3679,8 @@ components:
         id:
           type: integer
           readOnly: true
+        academic_year_id:
+          type: integer
         lesson_number:
           type: integer
         start_time:
@@ -3682,6 +3690,7 @@ components:
           type: string
           example: "09:30:00"
       required:
+        - academic_year_id
         - lesson_number
         - start_time
         - end_time

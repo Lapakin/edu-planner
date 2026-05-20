@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS academic_year_to_specialty
 
 CREATE TABLE IF NOT EXISTS user_info
 (
-    id         BIGINT  PRIMARY KEY,
+    id         BIGINT PRIMARY KEY,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -267,8 +267,13 @@ CREATE TABLE IF NOT EXISTS schedule_template_setting
 );
 CREATE TABLE IF NOT EXISTS bell_schedule
 (
-    id            bigserial PRIMARY KEY,
-    lesson_number int UNIQUE NOT NULL,
-    start_time    time       NOT NULL,
-    end_time      time       NOT NULL
+    id               bigserial PRIMARY KEY,
+    academic_year_id bigint NOT NULL REFERENCES academic_year (id),
+    lesson_number    int    NOT NULL,
+    start_time       time   NOT NULL,
+    end_time         time   NOT NULL
 );
+
+ALTER TABLE bell_schedule
+    ADD CONSTRAINT bell_schedule_academic_year_lesson_unique
+        UNIQUE (academic_year_id, lesson_number);

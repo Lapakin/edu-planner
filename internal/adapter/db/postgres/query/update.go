@@ -325,3 +325,29 @@ func (b *BatchUpdateBuilder) buildSQL(numRows int) string {
 
 	return sb.String()
 }
+
+func (b *BatchUpdateBuilder) ExecContext(db sqlx.ExtContext, args []any) (sql.Result, error) {
+	if b.table == "" {
+		return nil, errors.New("batch update: table not set")
+	}
+	if len(b.pks) == 0 {
+		return nil, errors.New("batch update: primary keys not set")
+	}
+	if len(b.cols) == 0 {
+		return nil, errors.New("batch update: no columns specified")
+	}
+
+	colsPerRow := len(b.cols)
+	if len(args)%colsPerRow != 0 {
+		return nil, fmt.Errorf("batch update: args count (%d) not divisible by column count (%d)", len(args), colsPerRow)
+	}
+
+	totalRows := len(args) / colsPerRow
+	if totalRows == 0 {
+		return nil, nil
+	}
+
+	query := b.buildSQL(totalRows)
+
+	return db.ExecContext(b.ctx, query, args...)
+}
