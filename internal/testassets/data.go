@@ -261,7 +261,9 @@ var (
 
 	ScheduleTemplateSetting1 = &domain.ScheduleTemplateSetting{
 		ID:                         1,
-		HoursPerLesson:             1.5,
+		AcademicYearID:             &AcademicYear1.ID,
+		LessonsPerClass:            2,
+		StudyDaysMask:              domain.StudyDaysMaskDefault,
 		MaxIdenticalLessonsPerDay:  2,
 		MaxStudyHoursPerDay:        8,
 		MaxTeacherHoursPerWeek:     36,
@@ -269,26 +271,68 @@ var (
 	}
 	ScheduleTemplateSetting2 = &domain.ScheduleTemplateSetting{
 		ID:                        2,
-		HoursPerLesson:            2.0,
+		AcademicYearID:            &AcademicYear1.ID,
+		LessonsPerClass:           2,
+		StudyDaysMask:             domain.StudyDaysMaskDefault,
 		MaxIdenticalLessonsPerDay: 3,
 		MaxStudyHoursPerDay:       10,
 		MaxTeacherHoursPerWeek:    40,
 	}
+
+	TeacherSlotPreference1 = &domain.TeacherSlotPreference{
+		ID:             1,
+		AcademicYearID: AcademicYear1.ID,
+		TeacherID:      Teacher1.ID,
+		Weekday:        domain.WeekdayMonday,
+		LessonNumber:   1,
+		SlotType:       domain.SlotTypePreferred,
+	}
+	TeacherSlotPreference2 = &domain.TeacherSlotPreference{
+		ID:             2,
+		AcademicYearID: AcademicYear1.ID,
+		TeacherID:      Teacher2.ID,
+		Weekday:        domain.WeekdayTuesday,
+		LessonNumber:   2,
+		SlotType:       domain.SlotTypeForbidden,
+	}
+	TeacherSlotPreferencesArray = domain.TeacherSlotPreferences{TeacherSlotPreference1, TeacherSlotPreference2}
+
+	CycleCommitteeLabRoom1 = &domain.CycleCommitteeLabRoom{
+		ID:               1,
+		AcademicYearID:   AcademicYear1.ID,
+		CycleCommitteeID: CycleCommittee1.ID,
+		RoomID:           Room1.ID,
+	}
+	CycleCommitteeLabRoom2 = &domain.CycleCommitteeLabRoom{
+		ID:               2,
+		AcademicYearID:   AcademicYear1.ID,
+		CycleCommitteeID: CycleCommittee1.ID,
+		RoomID:           Room2.ID,
+	}
+	CycleCommitteeLabRoomsArray   = domain.CycleCommitteeLabRooms{CycleCommitteeLabRoom1, CycleCommitteeLabRoom2}
 	ScheduleTemplateSettingsArray = domain.ScheduleTemplateSettings{ScheduleTemplateSetting1, ScheduleTemplateSetting2}
 
 	ScheduleRestriction1 = &domain.ScheduleRestriction{
-		ID:                      1,
-		MinGroupLessonsPerDay:   2,
-		MaxGroupLessonsPerDay:   4,
-		MaxTeacherLessonsPerDay: 5,
-		NoGapsInGroupSchedule:   true,
+		ID:                           1,
+		AcademicYearID:               &AcademicYear1.ID,
+		MinGroupLessonsPerDay:        2,
+		MaxGroupLessonsPerDay:        4,
+		MaxTeacherLessonsPerDay:      5,
+		MaxConsecutiveTeacherLessons: 4,
+		TimePriority:                 domain.TimePriorityNone,
+		AllowFlowLessons:             true,
+		NoGapsInGroupSchedule:        true,
 	}
 	ScheduleRestriction2 = &domain.ScheduleRestriction{
-		ID:                      2,
-		MinGroupLessonsPerDay:   1,
-		MaxGroupLessonsPerDay:   3,
-		MaxTeacherLessonsPerDay: 4,
-		NoGapsInGroupSchedule:   false,
+		ID:                           2,
+		AcademicYearID:               &AcademicYear1.ID,
+		MinGroupLessonsPerDay:        1,
+		MaxGroupLessonsPerDay:        3,
+		MaxTeacherLessonsPerDay:      4,
+		MaxConsecutiveTeacherLessons: 3,
+		TimePriority:                 domain.TimePriorityMorning,
+		AllowFlowLessons:             true,
+		NoGapsInGroupSchedule:        false,
 	}
 	ScheduleRestrictionsArray = domain.ScheduleRestrictions{ScheduleRestriction1, ScheduleRestriction2}
 

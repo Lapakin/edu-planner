@@ -22,13 +22,15 @@ const (
 
 // lesson is the internal mutable representation of a lesson during generation.
 type lesson struct {
-	groupID     uint64
-	subjectID   uint64
-	subLessons  []*internalSubLesson
-	format      lessonFormat
-	isScheduled bool
-	lType       internalLessonType
-	workloadID  uint64
+	groupID          uint64
+	subjectID        uint64
+	subLessons       []*internalSubLesson
+	format           lessonFormat
+	isScheduled      bool
+	lType            internalLessonType
+	workloadID       uint64
+	cycleCommitteeID uint64
+	isLab            bool
 }
 
 // internalSubLesson represents a teacher assignment within a lesson.
@@ -59,13 +61,15 @@ func (l *lesson) teacherIDs() []uint64 {
 // clone creates a deep copy of the lesson.
 func (l *lesson) clone() *lesson {
 	c := &lesson{
-		groupID:     l.groupID,
-		subjectID:   l.subjectID,
-		subLessons:  nil,
-		format:      l.format,
-		isScheduled: l.isScheduled,
-		lType:       l.lType,
-		workloadID:  l.workloadID,
+		groupID:          l.groupID,
+		subjectID:        l.subjectID,
+		subLessons:       nil,
+		format:           l.format,
+		isScheduled:      l.isScheduled,
+		lType:            l.lType,
+		workloadID:       l.workloadID,
+		cycleCommitteeID: l.cycleCommitteeID,
+		isLab:            l.isLab,
 	}
 	c.subLessons = make([]*internalSubLesson, len(l.subLessons))
 	for i, sl := range l.subLessons {

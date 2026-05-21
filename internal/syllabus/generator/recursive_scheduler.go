@@ -64,9 +64,13 @@ func (rs *recursiveScheduler) tryScheduleLesson(l *lesson, dates []date, weekDat
 		freeSlots := rs.coord.finder.findAllFreeSlots(rs.coord.schedule, d, l.groupID)
 
 		for _, ln := range freeSlots {
+			if rs.isForbiddenForTeachers(d, l.teacherIDs(), ln) {
+				continue
+			}
 			if !rs.coord.schedule.hasConflict(d, ln, l.groupID, l.teacherIDs()) {
 				allParticipants := append([]uint64{l.groupID}, l.teacherIDs()...)
-				if rs.coord.availability.areFree(d, allParticipants, ln) {
+				if rs.coord.availability.areFree(d, allParticipants, ln) &&
+					!rs.violatesConsecutive(d, l.teacherIDs(), ln) {
 					// Place directly
 					rs.placeLesson(d, ln, l)
 					return true
@@ -84,6 +88,9 @@ func (rs *recursiveScheduler) tryScheduleLesson(l *lesson, dates []date, weekDat
 		freeSlots := rs.coord.finder.findAllFreeSlots(rs.coord.schedule, d, l.groupID)
 
 		for _, ln := range freeSlots {
+			if rs.isForbiddenForTeachers(d, l.teacherIDs(), ln) {
+				continue
+			}
 			conflicting := rs.coord.schedule.findConflictingLesson(d, ln, l.groupID, l.teacherIDs())
 			if conflicting == nil {
 				continue
@@ -104,6 +111,32 @@ func (rs *recursiveScheduler) tryScheduleLesson(l *lesson, dates []date, weekDat
 		}
 	}
 
+	return false
+}
+
+// isForbiddenForTeachers returns true if the given lesson number is forbidden for any teacher on date d.
+func (rs *recursiveScheduler) isForbiddenForTeachers(d date, teacherIDs []uint64, ln int) bool {
+	wd := d.weekday()
+	for _, tid := range teacherIDs {
+		if rs.cfg.teacherForbiddenSlots[tid] != nil && rs.cfg.teacherForbiddenSlots[tid][wd][ln] {
+			return true
+		}
+	}
+	return false
+}
+
+// violatesConsecutive returns true if placing for any teacher at ln on d would
+// exceed the configured maxConsecutiveTeacherLessons limit.
+func (rs *recursiveScheduler) violatesConsecutive(d date, teacherIDs []uint64, ln int) bool {
+	maxC := rs.cfg.maxConsecutiveTeacherLessons
+	if maxC <= 0 {
+		return false
+	}
+	for _, tid := range teacherIDs {
+		if rs.coord.availability.wouldExceedConsecutive(d, tid, ln, maxC) {
+			return true
+		}
+	}
 	return false
 }
 

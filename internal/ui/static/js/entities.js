@@ -18,13 +18,6 @@ const ENTITY_CONFIGS = {
         values: { true: 'active', false: 'inactive' } },
     ],
     filters: [],
-    extraActions: [
-      {
-        labelFn: (row) => row.is_active ? t('actions.deactivate') : t('actions.activate'),
-        classFn: (row) => row.is_active ? 'btn btn-sm btn-secondary' : 'btn btn-sm btn-primary',
-        handler: (row, mgr) => App.toggleAcademicYear(row, mgr),
-      },
-    ],
   },
 
   'semesters': {
@@ -93,7 +86,7 @@ const ENTITY_CONFIGS = {
     columns: [
       { key: 'name',    type: 'text',   labelKey: 'fields.name', required: true },
       { key: 'user_id', type: 'select', labelKey: 'fields.userId',
-        ref: 'users', refLabel: 'email' },
+        ref: 'users', refLabel: 'full_name' },
     ],
     filters: [],
   },
@@ -184,11 +177,13 @@ const ENTITY_CONFIGS = {
     i18nKey: 'entities.studyPlans',
     autoYearFilter: true,
     columns: [
-      { key: 'specialty_id',  type: 'select', labelKey: 'fields.specialty',
-        ref: 'specialties', refLabel: 'name', required: true },
       { key: 'discipline_id', type: 'select', labelKey: 'fields.discipline',
         ref: 'disciplines', refLabel: 'name', required: true },
-      { key: 'semester_number',  type: 'number', labelKey: 'fields.semesterNumber',  required: true },
+      { key: 'specialty_id',  type: 'select', labelKey: 'fields.specialty',
+        ref: 'specialties', refLabel: 'name', required: true },
+      { key: 'semester_number', type: 'select', labelKey: 'fields.semesterNumber', required: true,
+        numericValue: true,
+        options: [1,2,3,4,5,6,7,8].map(n => ({ value: String(n), labelKey: String(n) })) },
       { key: 'lectures',         type: 'number', labelKey: 'fields.lecturesHours' },
       { key: 'laboratory',       type: 'number', labelKey: 'fields.laboratoryHours' },
       { key: 'practical',        type: 'number', labelKey: 'fields.practicalHours' },
@@ -199,6 +194,8 @@ const ENTITY_CONFIGS = {
     filters: [
       { key: 'specialty_id', type: 'select', labelKey: 'fields.specialty',
         ref: 'specialties', refLabel: 'name' },
+      { key: 'semester_number', type: 'select', labelKey: 'fields.semesterNumber',
+        options: [1,2,3,4,5,6,7,8].map(n => ({ value: String(n), labelKey: String(n) })) },
     ],
     extraActions: [
       {
@@ -256,8 +253,15 @@ const ENTITY_CONFIGS = {
   'schedule-template-settings': {
     apiPath: '/api/syllabus/schedule-template-settings',
     i18nKey: 'entities.scheduleTemplateSettings',
+    autoYearFilter: true,
     columns: [
-      { key: 'hours_per_lesson',               type: 'number', labelKey: 'fields.hoursPerLesson',             required: true },
+      { key: 'lessons_per_class',              type: 'select', labelKey: 'fields.lessonsPerClass',            required: true,
+        options: [
+          { value: 1, labelKey: 'lessonsPerClass.one' },
+          { value: 2, labelKey: 'lessonsPerClass.two' },
+          { value: 3, labelKey: 'lessonsPerClass.three' },
+        ] },
+      { key: 'study_days_mask',                type: 'number', labelKey: 'fields.studyDaysMask' },
       { key: 'max_identical_lessons_per_day',  type: 'number', labelKey: 'fields.maxIdenticalLessonsPerDay',  required: true },
       { key: 'max_study_hours_per_day',        type: 'number', labelKey: 'fields.maxStudyHoursPerDay',        required: true },
       { key: 'max_teacher_hours_per_week',     type: 'number', labelKey: 'fields.maxTeacherHoursPerWeek',     required: true },
@@ -269,11 +273,20 @@ const ENTITY_CONFIGS = {
   'schedule-restrictions': {
     apiPath: '/api/syllabus/schedule-restrictions',
     i18nKey: 'entities.scheduleRestrictions',
+    autoYearFilter: true,
     columns: [
-      { key: 'min_group_lessons_per_day',   type: 'number', labelKey: 'fields.minGroupLessonsPerDay',   required: true },
-      { key: 'max_group_lessons_per_day',   type: 'number', labelKey: 'fields.maxGroupLessonsPerDay',   required: true },
-      { key: 'max_teacher_lessons_per_day', type: 'number', labelKey: 'fields.maxTeacherLessonsPerDay', required: true },
-      { key: 'no_gaps_in_group_schedule',   type: 'bool',   labelKey: 'fields.noGapsInGroupSchedule',  required: true },
+      { key: 'min_group_lessons_per_day',           type: 'number', labelKey: 'fields.minGroupLessonsPerDay',           required: true },
+      { key: 'max_group_lessons_per_day',           type: 'number', labelKey: 'fields.maxGroupLessonsPerDay',           required: true },
+      { key: 'max_teacher_lessons_per_day',         type: 'number', labelKey: 'fields.maxTeacherLessonsPerDay',         required: true },
+      { key: 'max_consecutive_teacher_lessons',     type: 'number', labelKey: 'fields.maxConsecutiveTeacherLessons',    required: true },
+      { key: 'time_priority',                       type: 'select', labelKey: 'fields.timePriority',
+        options: [
+          { value: 'none',      labelKey: 'timePriority.none' },
+          { value: 'morning',   labelKey: 'timePriority.morning' },
+          { value: 'afternoon', labelKey: 'timePriority.afternoon' },
+        ] },
+      { key: 'allow_flow_lessons',                  type: 'bool',   labelKey: 'fields.allowFlowLessons' },
+      { key: 'no_gaps_in_group_schedule',           type: 'bool',   labelKey: 'fields.noGapsInGroupSchedule',          required: true },
     ],
     filters: [],
   },
@@ -304,6 +317,101 @@ const ENTITY_CONFIGS = {
         labelFn: (row) => row.is_active ? t('actions.deactivate') : t('actions.activate'),
         classFn: (row) => row.is_active ? 'btn btn-sm btn-secondary' : 'btn btn-sm btn-primary',
         handler: (row, mgr) => App.toggleScheduleTemplate(row, mgr),
+      },
+    ],
+  },
+
+  'teacher-slot-preferences': {
+    apiPath: '/api/syllabus/teacher-slot-preferences',
+    i18nKey: 'entities.teacherSlotPreferences',
+    autoYearFilter: true,
+    columns: [
+      { key: 'teacher_id',    type: 'select', labelKey: 'fields.teacher',
+        ref: 'teachers', refLabel: 'id', required: true },
+      { key: 'weekday',       type: 'select', labelKey: 'fields.weekday', required: true,
+        options: [
+          { value: 'monday',    labelKey: 'weekdays.monday' },
+          { value: 'tuesday',   labelKey: 'weekdays.tuesday' },
+          { value: 'wednesday', labelKey: 'weekdays.wednesday' },
+          { value: 'thursday',  labelKey: 'weekdays.thursday' },
+          { value: 'friday',    labelKey: 'weekdays.friday' },
+          { value: 'saturday',  labelKey: 'weekdays.saturday' },
+        ] },
+      { key: 'lesson_number', type: 'number', labelKey: 'fields.lessonNumber', required: true },
+      { key: 'slot_type',     type: 'select', labelKey: 'fields.slotType', required: true,
+        options: [
+          { value: 'preferred', labelKey: 'slotTypes.preferred' },
+          { value: 'forbidden', labelKey: 'slotTypes.forbidden' },
+        ] },
+    ],
+    filters: [
+      { key: 'teacher_id', type: 'select', labelKey: 'fields.teacher',
+        ref: 'teachers', refLabel: 'id' },
+    ],
+  },
+
+  'cycle-committee-lab-rooms': {
+    apiPath: '/api/syllabus/cycle-committee-lab-rooms',
+    i18nKey: 'entities.cycleCommitteeLabRooms',
+    autoYearFilter: true,
+    columns: [
+      { key: 'cycle_committee_id', type: 'select', labelKey: 'fields.cycleCommittee',
+        ref: 'cycle-committees', refLabel: 'name', required: true },
+      { key: 'room_id', type: 'select', labelKey: 'fields.room',
+        ref: 'rooms', refLabel: 'name', required: true },
+    ],
+    filters: [
+      { key: 'cycle_committee_id', type: 'select', labelKey: 'fields.cycleCommittee',
+        ref: 'cycle-committees', refLabel: 'name' },
+    ],
+  },
+
+  // ---- Users (admin) ----
+
+  'users': {
+    apiPath: '/api/auth/users',
+    i18nKey: 'entities.users',
+    noCreate: true,
+    columns: [
+      { key: 'first_name',  type: 'text',   labelKey: 'fields.firstName' },
+      { key: 'last_name',   type: 'text',   labelKey: 'fields.lastName' },
+      { key: 'patronymic',  type: 'text',   labelKey: 'fields.patronymic' },
+      { key: 'email',       type: 'text',   labelKey: 'fields.email', readonly: true },
+      { key: 'role',        type: 'select', labelKey: 'fields.role',
+        options: [
+          { value: 'admin',   labelKey: 'roles.admin' },
+          { value: 'dean',    labelKey: 'roles.dean' },
+          { value: 'teacher', labelKey: 'roles.teacher' },
+          { value: 'user',    labelKey: 'roles.user' },
+        ] },
+      { key: 'is_active', type: 'badge', labelKey: 'fields.isActive', readonly: true,
+        values: { true: 'active', false: 'inactive' } },
+    ],
+    filters: [],
+    extraActions: [
+      {
+        labelFn: (row) => row.is_active ? t('actions.deactivate') : t('actions.activate'),
+        classFn: (row) => `btn btn-sm btn-${row.is_active ? 'secondary' : 'primary'}`,
+        handler: async (row, mgr) => {
+          try {
+            await Api.post(`/api/auth/users/${row.id}/${row.is_active ? 'deactivate' : 'activate'}`, null);
+            row.is_active = !row.is_active;
+            mgr.reloadRow(row);
+            Toast.success(t('messages.saved'));
+          } catch(e) { Toast.error(e.message); }
+        },
+      },
+      {
+        labelFn: () => '⟳',
+        classFn: () => 'btn btn-sm btn-secondary',
+        showFn: (row) => !row.is_active,
+        handler: async (row) => {
+          try {
+            const resp = await Api.post(`/api/auth/users/${row.id}/reset-invite`, null);
+            const link = window.location.origin + (resp?.invite_link || '');
+            navigator.clipboard.writeText(link).then(() => Toast.info(t('messages.copied')));
+          } catch(e) { Toast.error(e.message); }
+        },
       },
     ],
   },

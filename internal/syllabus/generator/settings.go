@@ -7,7 +7,7 @@ import (
 // settings wraps schedule template settings combined with bell schedule data and
 // an optional restriction that applies hard daily/gap constraints.
 type settings struct {
-	hoursPerLesson         float64
+	lessonsPerClass        int
 	maxIdenticalPerDay     int
 	numberOfLessonsInDay   int
 	firstLessonNumber      int
@@ -17,12 +17,20 @@ type settings struct {
 	maxTeacherHoursPerWeek int
 	maxGroupHoursPerWeek   *int
 	// computed hard limits (applied from templateSetting + restriction)
-	maxGroupLessonsPerDay     int
-	minGroupLessonsPerDay     int
-	maxTeacherLessonsPerDay   int
-	maxGroupLessonsPerWeekV   int
-	maxTeacherLessonsPerWeekV int
-	noGapsRequired            bool
+	maxGroupLessonsPerDay        int
+	minGroupLessonsPerDay        int
+	maxTeacherLessonsPerDay      int
+	maxGroupLessonsPerWeekV      int
+	maxTeacherLessonsPerWeekV    int
+	noGapsRequired               bool
+	maxConsecutiveTeacherLessons int
+	timePriority                 domain.TimePriority
+	allowFlowLessons             bool
+	// teacher slot preferences
+	teacherForbiddenSlots map[uint64]map[domain.Weekday]map[int]bool
+	teacherPreferredSlots map[uint64]map[domain.Weekday]map[int]bool
+	// cycle committee lab rooms: cycleCommitteeID → []roomID
+	cycleCommitteeLabRooms map[uint64][]uint64
 }
 
 // newSettings creates a settings instance from domain models.
@@ -30,23 +38,33 @@ func newSettings(
 	templateSetting *domain.ScheduleTemplateSetting,
 	bellSchedules domain.BellSchedules,
 	restriction *domain.ScheduleRestriction,
+	preferences domain.TeacherSlotPreferences,
+	labRooms domain.CycleCommitteeLabRooms,
 ) *settings {
+	educationWeek := templateSetting.StudyDaysMask.ToWeekdays()
+
 	s := &settings{
-		hoursPerLesson:            templateSetting.HoursPerLesson,
-		maxIdenticalPerDay:        templateSetting.MaxIdenticalLessonsPerDay,
-		numberOfLessonsInDay:      0,
-		firstLessonNumber:         0,
-		lastLessonNumber:          0,
-		educationWeek:             domain.DefaultEducationWeek,
-		maxStudyHoursPerDay:       templateSetting.MaxStudyHoursPerDay,
-		maxTeacherHoursPerWeek:    templateSetting.MaxTeacherHoursPerWeek,
-		maxGroupHoursPerWeek:      templateSetting.MaxGroupLessonHoursPerWeek,
-		maxGroupLessonsPerDay:     0,
-		minGroupLessonsPerDay:     0,
-		maxTeacherLessonsPerDay:   0,
-		maxGroupLessonsPerWeekV:   0,
-		maxTeacherLessonsPerWeekV: 0,
-		noGapsRequired:            false,
+		lessonsPerClass:              templateSetting.LessonsPerClass,
+		maxIdenticalPerDay:           templateSetting.MaxIdenticalLessonsPerDay,
+		numberOfLessonsInDay:         0,
+		firstLessonNumber:            0,
+		lastLessonNumber:             0,
+		educationWeek:                educationWeek,
+		maxStudyHoursPerDay:          templateSetting.MaxStudyHoursPerDay,
+		maxTeacherHoursPerWeek:       templateSetting.MaxTeacherHoursPerWeek,
+		maxGroupHoursPerWeek:         templateSetting.MaxGroupLessonHoursPerWeek,
+		maxGroupLessonsPerDay:        0,
+		minGroupLessonsPerDay:        0,
+		maxTeacherLessonsPerDay:      0,
+		maxGroupLessonsPerWeekV:      0,
+		maxTeacherLessonsPerWeekV:    0,
+		noGapsRequired:               false,
+		maxConsecutiveTeacherLessons: 0,
+		timePriority:                 domain.TimePriorityNone,
+		allowFlowLessons:             true,
+		teacherForbiddenSlots:        make(map[uint64]map[domain.Weekday]map[int]bool),
+		teacherPreferredSlots:        make(map[uint64]map[domain.Weekday]map[int]bool),
+		cycleCommitteeLabRooms:       make(map[uint64][]uint64),
 	}
 
 	if len(bellSchedules) > 0 {
@@ -63,10 +81,10 @@ func newSettings(
 		s.numberOfLessonsInDay = s.lastLessonNumber - s.firstLessonNumber + 1
 	}
 
-	// Compute hours-based group daily max
+	// Compute lessonsPerClass-based group daily max
 	computedGroupMax := s.numberOfLessonsInDay
-	if s.hoursPerLesson > 0 {
-		computed := int(float64(s.maxStudyHoursPerDay) / s.hoursPerLesson)
+	if s.lessonsPerClass > 0 {
+		computed := s.maxStudyHoursPerDay / s.lessonsPerClass
 		if computed < computedGroupMax {
 			computedGroupMax = computed
 		}
@@ -74,14 +92,14 @@ func newSettings(
 
 	// Compute teacher weekly max
 	computedTeacherWeekMax := s.numberOfLessonsInDay * len(s.educationWeek)
-	if s.hoursPerLesson > 0 {
-		computedTeacherWeekMax = int(float64(s.maxTeacherHoursPerWeek) / s.hoursPerLesson)
+	if s.lessonsPerClass > 0 {
+		computedTeacherWeekMax = s.maxTeacherHoursPerWeek / s.lessonsPerClass
 	}
 
 	// Compute group weekly max
 	computedGroupWeekMax := s.numberOfLessonsInDay * len(s.educationWeek)
-	if s.maxGroupHoursPerWeek != nil && s.hoursPerLesson > 0 {
-		computedGroupWeekMax = int(float64(*s.maxGroupHoursPerWeek) / s.hoursPerLesson)
+	if s.maxGroupHoursPerWeek != nil && s.lessonsPerClass > 0 {
+		computedGroupWeekMax = *s.maxGroupHoursPerWeek / s.lessonsPerClass
 	}
 
 	s.maxGroupLessonsPerDay = computedGroupMax
@@ -97,12 +115,42 @@ func newSettings(
 
 	s.minGroupLessonsPerDay = r.MinGroupLessonsPerDay
 	s.noGapsRequired = r.NoGapsInGroupSchedule
+	s.maxConsecutiveTeacherLessons = r.MaxConsecutiveTeacherLessons
+	s.timePriority = r.TimePriority
+	s.allowFlowLessons = r.AllowFlowLessons
 
 	if r.MaxGroupLessonsPerDay > 0 && r.MaxGroupLessonsPerDay < s.maxGroupLessonsPerDay {
 		s.maxGroupLessonsPerDay = r.MaxGroupLessonsPerDay
 	}
 	if r.MaxTeacherLessonsPerDay > 0 {
 		s.maxTeacherLessonsPerDay = r.MaxTeacherLessonsPerDay
+	}
+
+	// Build teacher slot preference maps
+	for _, pref := range preferences {
+		switch pref.SlotType {
+		case domain.SlotTypeForbidden:
+			if s.teacherForbiddenSlots[pref.TeacherID] == nil {
+				s.teacherForbiddenSlots[pref.TeacherID] = make(map[domain.Weekday]map[int]bool)
+			}
+			if s.teacherForbiddenSlots[pref.TeacherID][pref.Weekday] == nil {
+				s.teacherForbiddenSlots[pref.TeacherID][pref.Weekday] = make(map[int]bool)
+			}
+			s.teacherForbiddenSlots[pref.TeacherID][pref.Weekday][pref.LessonNumber] = true
+		case domain.SlotTypePreferred:
+			if s.teacherPreferredSlots[pref.TeacherID] == nil {
+				s.teacherPreferredSlots[pref.TeacherID] = make(map[domain.Weekday]map[int]bool)
+			}
+			if s.teacherPreferredSlots[pref.TeacherID][pref.Weekday] == nil {
+				s.teacherPreferredSlots[pref.TeacherID][pref.Weekday] = make(map[int]bool)
+			}
+			s.teacherPreferredSlots[pref.TeacherID][pref.Weekday][pref.LessonNumber] = true
+		}
+	}
+
+	// Build cycle committee lab room map
+	for _, lr := range labRooms {
+		s.cycleCommitteeLabRooms[lr.CycleCommitteeID] = append(s.cycleCommitteeLabRooms[lr.CycleCommitteeID], lr.RoomID)
 	}
 
 	return s

@@ -37,7 +37,7 @@ func TestWeekdayIndex_UnknownDefault(t *testing.T) {
 // makeDenominatorScenario sets up a minimal scenario for denominator reproduce testing.
 // Returns cfg, coord, rng, numeratorDates, denominatorDates, denomLesson.
 func makeDenominatorScenario() (*settings, *coordinator, *rand.Rand, []date, []date, *lesson) {
-	ts := makeTemplateSetting(2.0, 8, 40)
+	ts := makeTemplateSetting(2, 8, 40)
 	bells := makeBellSchedules(4)
 	r := &domain.ScheduleRestriction{
 		MinGroupLessonsPerDay:   0,
@@ -45,7 +45,7 @@ func makeDenominatorScenario() (*settings, *coordinator, *rand.Rand, []date, []d
 		MaxTeacherLessonsPerDay: 5,
 		NoGapsInGroupSchedule:   false,
 	}
-	cfg := newSettings(ts, bells, r)
+	cfg := newSettings(ts, bells, r, nil, nil)
 	coord := newCoordinator(cfg, []uint64{101})
 	rng := rand.New(rand.NewSource(42))
 

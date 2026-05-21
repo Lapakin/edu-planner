@@ -112,6 +112,18 @@ func NewRouter(svc *service.Services) *gin.Engine {
 	apiV1.Handle(http.MethodPut, "/schedule-restrictions", handler.NewUpdateScheduleRestrictionsHandler(svc.ScheduleRestrictionSvc))
 	apiV1.Handle(http.MethodPost, "/schedule-restrictions/delete", handler.NewDeleteScheduleRestrictionByIDsHandler(svc.ScheduleRestrictionSvc))
 
+	apiV1.Handle(http.MethodGet, "/teacher-slot-preferences/:teacherSlotPreferenceId", handler.NewGetTeacherSlotPreferenceByIDHandler(svc.TeacherSlotPreferenceSvc))
+	apiV1.Handle(http.MethodPost, "/teacher-slot-preferences", handler.NewCreateTeacherSlotPreferencesHandler(svc.TeacherSlotPreferenceSvc))
+	apiV1.Handle(http.MethodGet, "/teacher-slot-preferences", handler.NewFetchTeacherSlotPreferencesHandler(svc.TeacherSlotPreferenceSvc))
+	apiV1.Handle(http.MethodPut, "/teacher-slot-preferences", handler.NewUpdateTeacherSlotPreferencesHandler(svc.TeacherSlotPreferenceSvc))
+	apiV1.Handle(http.MethodPost, "/teacher-slot-preferences/delete", handler.NewDeleteTeacherSlotPreferenceByIDsHandler(svc.TeacherSlotPreferenceSvc))
+
+	apiV1.Handle(http.MethodGet, "/cycle-committee-lab-rooms/:cycleCommitteeLabRoomId", handler.NewGetCycleCommitteeLabRoomByIDHandler(svc.CycleCommitteeLabRoomSvc))
+	apiV1.Handle(http.MethodPost, "/cycle-committee-lab-rooms", handler.NewCreateCycleCommitteeLabRoomsHandler(svc.CycleCommitteeLabRoomSvc))
+	apiV1.Handle(http.MethodGet, "/cycle-committee-lab-rooms", handler.NewFetchCycleCommitteeLabRoomsHandler(svc.CycleCommitteeLabRoomSvc))
+	apiV1.Handle(http.MethodPut, "/cycle-committee-lab-rooms", handler.NewUpdateCycleCommitteeLabRoomsHandler(svc.CycleCommitteeLabRoomSvc))
+	apiV1.Handle(http.MethodPost, "/cycle-committee-lab-rooms/delete", handler.NewDeleteCycleCommitteeLabRoomByIDsHandler(svc.CycleCommitteeLabRoomSvc))
+
 	apiV1.Handle(http.MethodPost, "/schedule-templates/generate", handler.NewGenerateScheduleTemplateHandler(svc.ScheduleTemplateSvc))
 	apiV1.Handle(http.MethodPost, "/schedule-templates/save", handler.NewSaveScheduleTemplateHandler(svc.ScheduleTemplateSvc))
 	apiV1.Handle(http.MethodGet, "/schedule-templates/:scheduleTemplateId", handler.NewGetScheduleTemplateByIDHandler(svc.ScheduleTemplateSvc))

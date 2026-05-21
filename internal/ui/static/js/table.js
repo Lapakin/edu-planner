@@ -13,7 +13,7 @@ class EntityManager {
     this.filterValues = {};
     this._container = null;
     this._page = 0;
-    this._pageSize = 20;
+    this._pageSize = 15;
   }
 
   // ── Data loading ──────────────────────────────────────────────────
@@ -35,8 +35,14 @@ class EntityManager {
     return this.rows.filter(row => {
       for (const [key, val] of Object.entries(this.filterValues)) {
         if (!val) continue;
+        const filterCfg = this.config.filters?.find(f => f.key === key);
         const rv = String(row[key] ?? '');
-        if (!rv.toLowerCase().includes(String(val).toLowerCase())) return false;
+        // Select filters use exact match; text filters use substring match
+        if (filterCfg?.type === 'select') {
+          if (rv !== String(val)) return false;
+        } else {
+          if (!rv.toLowerCase().includes(String(val).toLowerCase())) return false;
+        }
       }
       return true;
     });
@@ -99,12 +105,12 @@ class EntityManager {
           <svg class="icon icon-sm"><use href="#icon-plus"/></svg>
           <span>${t('actions.add')}</span>
         </button>` : ''}
+      </div>
+      <div class="toolbar-right">
         <button class="btn btn-danger btn-sm" id="em-del-btn" disabled>
           <svg class="icon icon-sm"><use href="#icon-trash"/></svg>
           <span>${t('actions.deleteSelected')}</span>
         </button>
-      </div>
-      <div class="toolbar-right">
         <button class="btn btn-primary btn-sm hidden" id="em-save-btn">
           <svg class="icon icon-sm"><use href="#icon-save"/></svg>
           <span>${t('actions.save')}</span>
@@ -136,12 +142,12 @@ class EntityManager {
       fb.className = 'filter-bar';
       config.filters.forEach(f => {
         const wrap = document.createElement('div');
-        wrap.className = 'filter-item';
+        wrap.className = 'filter-field';
         wrap.innerHTML = `<label>${t(f.labelKey)}</label>`;
         let input;
         if (f.type === 'select') {
           input = document.createElement('select');
-          input.innerHTML = `<option value="">${t('actions.add').replace(t('actions.add'), '—')}</option>`;
+          input.innerHTML = `<option value="">—</option>`;
           const opts = f.ref ? (this.cache[f.ref] || []) : (f.options || []);
           opts.forEach(o => {
             const op = document.createElement('option');
@@ -157,11 +163,13 @@ class EntityManager {
           input.type = 'text';
           input.placeholder = t(f.labelKey);
         }
-        input.addEventListener('change', () => {
+        const applyFilter = () => {
           this.filterValues[f.key] = input.value;
-          this._page = 0; // reset page on filter change
+          this._page = 0;
           this._renderTable();
-        });
+        };
+        input.addEventListener('change', applyFilter);
+        if (f.type !== 'select') input.addEventListener('input', applyFilter);
         this.filterValues[f.key] = input.value;
         wrap.appendChild(input);
         fb.appendChild(wrap);
@@ -278,6 +286,7 @@ class EntityManager {
         const tdAct = document.createElement('td');
         tdAct.className = 'col-actions';
         config.extraActions.forEach(act => {
+          if (act.showFn && !act.showFn(row)) return;
           const btn = document.createElement('button');
           btn.className = act.classFn ? act.classFn(row) : 'btn btn-sm btn-secondary';
           btn.textContent = act.labelFn ? act.labelFn(row) : (act.label || '');
@@ -385,7 +394,7 @@ class EntityManager {
       let newVal = input.value;
       if (col.type === 'bool') newVal = newVal === 'true';
       if (col.type === 'number') newVal = newVal === '' ? null : Number(newVal);
-      if (col.type === 'select' && col.ref) newVal = newVal === '' ? null : Number(newVal);
+      if (col.type === 'select' && (col.ref || col.numericValue)) newVal = newVal === '' ? null : Number(newVal);
       td.classList.remove('cell-editing');
       td.textContent = this._displayVal(col, newVal) || '—';
 

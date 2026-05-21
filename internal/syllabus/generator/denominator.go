@@ -154,6 +154,8 @@ func weekdayIndex(wd domain.Weekday) int {
 		return 4
 	case domain.WeekdaySaturday:
 		return 5
+	case domain.WeekdaySunday:
+		return 6
 	default:
 		return 0
 	}

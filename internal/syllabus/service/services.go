@@ -26,6 +26,8 @@ func NewServices(db *pg.DB, rm repository.RepoManager, l *logging.Logger, cfg do
 		BellScheduleSvc:            NewBellScheduleService(db, rm, l.WithField("service", "BellSchedule")),
 		ScheduleTemplateSvc:        NewScheduleTemplateService(db, rm, l.WithField("service", "ScheduleTemplate"), cfg),
 		ScheduleRestrictionSvc:     NewScheduleRestrictionService(db, rm, l.WithField("service", "ScheduleRestriction")),
+		TeacherSlotPreferenceSvc:   NewTeacherSlotPreferenceService(db, rm, l.WithField("service", "TeacherSlotPreference")),
+		CycleCommitteeLabRoomSvc:   NewCycleCommitteeLabRoomService(db, rm, l.WithField("service", "CycleCommitteeLabRoom")),
 		UserSvc:                    NewUserService(db, rm, l.WithField("service", "UserInfo")),
 	}
 }

@@ -3,8 +3,7 @@ package domain
 import "time"
 
 type GenerateScheduleRequest struct {
-	SemesterID uint64   `json:"semester_id"`
-	GroupIDs   []uint64 `json:"group_ids,omitempty"`
+	SemesterID uint64 `json:"semester_id"`
 }
 
 type SaveScheduleTemplateRequest struct {
@@ -16,11 +15,13 @@ type SaveScheduleTemplateRequest struct {
 type GenerationConfig struct {
 	Timeout            time.Duration
 	NumberOfGoroutines int
+	MaxAttempts        int
 }
 
 func DefaultGenerationConfig() GenerationConfig {
 	return GenerationConfig{
 		Timeout:            120 * time.Second,
 		NumberOfGoroutines: 4,
+		MaxAttempts:        100,
 	}
 }

@@ -72,7 +72,10 @@ func (g *generation) exec() (*domain.ScheduleData, error) {
 	// so all scheduling must happen within these dates only.
 	numFirstWeek := firstWeekDates(numeratorDates, g.cfg.educationWeek)
 
-	// 5a. Validate generation possibility
+	// 5a. Pre-mark teacher forbidden slots across all dates
+	g.applyTeacherForbiddenSlots(coord.availability, append(numeratorDates, denominatorDates...))
+
+	// 5b. Validate generation possibility
 	v := newValidator(g.cfg)
 	if err := v.validate(numLessons, numFirstWeek, g.groupIDs); err != nil {
 		return nil, err
@@ -126,6 +129,18 @@ func (g *generation) exec() (*domain.ScheduleData, error) {
 
 	// 11. Convert to output format
 	return g.convertToScheduleData(coord.schedule, numeratorDates, denominatorDates), nil
+}
+
+// applyTeacherForbiddenSlots pre-marks forbidden teacher slots as unavailable.
+func (g *generation) applyTeacherForbiddenSlots(avail *availability, allDates []date) {
+	for _, d := range allDates {
+		wd := d.weekday()
+		for teacherID, dayMap := range g.cfg.teacherForbiddenSlots {
+			for ln := range dayMap[wd] {
+				avail.markUnavailable(d, teacherID, ln)
+			}
+		}
+	}
 }
 
 // convertToScheduleData converts internal schedule to the domain ScheduleData format.

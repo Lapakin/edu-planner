@@ -17,17 +17,17 @@ func makeWorkload(totalHours int, isSplitting bool) *Workload {
 	}
 }
 
-func makeWorkloadDistributor(hoursPerLesson float64) *workloadDistributor {
-	ts := makeTemplateSetting(hoursPerLesson, 8, 40)
+func makeWorkloadDistributor(lessonsPerClass int) *workloadDistributor {
+	ts := makeTemplateSetting(lessonsPerClass, 8, 40)
 	bells := makeBellSchedules(5)
-	cfg := newSettings(ts, bells, nil)
+	cfg := newSettings(ts, bells, nil, nil, nil)
 	return newWorkloadDistributor(cfg)
 }
 
 // --- distributeWorkload ---
 
 func TestDistributeWorkload_ZeroHoursProducesNoLessons(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w := makeWorkload(0, false)
 
 	dist, err := wd.distributeWorkload(w, 4)
@@ -40,7 +40,7 @@ func TestDistributeWorkload_ZeroHoursProducesNoLessons(t *testing.T) {
 }
 
 func TestDistributeWorkload_EvenSplitBetweenNumeratorAndDenominator(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w := makeWorkload(8, false) // 8h / 2h = 4 lessons total → 2 num + 2 denom
 
 	dist, err := wd.distributeWorkload(w, 1)
@@ -53,7 +53,7 @@ func TestDistributeWorkload_EvenSplitBetweenNumeratorAndDenominator(t *testing.T
 }
 
 func TestDistributeWorkload_OddTotalAssignsRemainderToNumerator(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w := makeWorkload(6, false) // 6/2 = 3 lessons → 2 num + 1 denom
 
 	dist, err := wd.distributeWorkload(w, 1)
@@ -66,7 +66,7 @@ func TestDistributeWorkload_OddTotalAssignsRemainderToNumerator(t *testing.T) {
 }
 
 func TestDistributeWorkload_MultipleWeeksDividesPerWeek(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w := makeWorkload(16, false) // 16/2 = 8 lessons → 4 num + 4 denom; 2 per period per week over 2 weeks
 
 	dist, err := wd.distributeWorkload(w, 2)
@@ -81,7 +81,7 @@ func TestDistributeWorkload_MultipleWeeksDividesPerWeek(t *testing.T) {
 // --- createLessons ---
 
 func TestCreateLessons_UnitedFormat(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w := makeWorkload(4, false)
 
 	lessons := wd.createLessons(w, 3)
@@ -102,7 +102,7 @@ func TestCreateLessons_UnitedFormat(t *testing.T) {
 }
 
 func TestCreateLessons_SplitFormatWhenSplittingWithSubGroup(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	subGroup := uint64(1)
 	w := makeWorkload(4, true)
 	w.subGroupNumber = &subGroup
@@ -119,7 +119,7 @@ func TestCreateLessons_SplitFormatWhenSplittingWithSubGroup(t *testing.T) {
 }
 
 func TestCreateLessons_SplittingWithoutSubGroupIsUnited(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w := makeWorkload(4, true) // isSplitting=true but no subGroupNumber
 
 	lessons := wd.createLessons(w, 2)
@@ -131,7 +131,7 @@ func TestCreateLessons_SplittingWithoutSubGroupIsUnited(t *testing.T) {
 }
 
 func TestCreateLessons_ZeroCountReturnsEmpty(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w := makeWorkload(4, false)
 
 	lessons := wd.createLessons(w, 0)
@@ -143,7 +143,7 @@ func TestCreateLessons_ZeroCountReturnsEmpty(t *testing.T) {
 // --- distributeWorkloads (full pipeline) ---
 
 func TestDistributeWorkloads_SingleWorkload(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w := makeWorkload(4, false) // 4/2 = 2 total → 1 num + 1 denom per week
 
 	numLessons, denomLessons, err := wd.distributeWorkloads([]*Workload{w}, 2)
@@ -159,7 +159,7 @@ func TestDistributeWorkloads_SingleWorkload(t *testing.T) {
 }
 
 func TestDistributeWorkloads_EmptyWorkloadsReturnsEmpty(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 
 	numLessons, denomLessons, err := wd.distributeWorkloads([]*Workload{}, 4)
 	if err != nil {
@@ -171,7 +171,7 @@ func TestDistributeWorkloads_EmptyWorkloadsReturnsEmpty(t *testing.T) {
 }
 
 func TestDistributeWorkloads_MultipleWorkloads(t *testing.T) {
-	wd := makeWorkloadDistributor(2.0)
+	wd := makeWorkloadDistributor(2)
 	w1 := makeWorkload(4, false)
 	w2 := &Workload{
 		workloadDistributionID: 2,
@@ -203,7 +203,7 @@ func TestBuildWorkloadsFromDomain_SkipsDistributionWithNoStudyPlan(t *testing.T)
 	studyPlans := domain.StudyPlans{}
 	groups := domain.Groups{{ID: 1}}
 
-	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups)
+	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups, nil)
 	if len(result) != 0 {
 		t.Errorf("expected 0 workloads when study plan is missing, got %d", len(result))
 	}
@@ -223,7 +223,7 @@ func TestBuildWorkloadsFromDomain_SkipsZeroClassroomHours(t *testing.T) {
 	}
 	groups := domain.Groups{{ID: 1}}
 
-	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups)
+	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups, nil)
 	if len(result) != 0 {
 		t.Errorf("expected 0 workloads for zero classroom hours, got %d", len(result))
 	}
@@ -244,7 +244,7 @@ func TestBuildWorkloadsFromDomain_BuildsWorkloadCorrectly(t *testing.T) {
 	}
 	groups := domain.Groups{{ID: 1}}
 
-	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups)
+	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups, nil)
 	if len(result) != 1 {
 		t.Fatalf("expected 1 workload, got %d", len(result))
 	}

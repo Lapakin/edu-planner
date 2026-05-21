@@ -19,7 +19,7 @@ func newCoordinator(cfg *settings, roomIDs []uint64) *coordinator {
 	f := newFinder(cfg)
 	patternCtrl := newPatternController()
 	lim := newLimiter(cfg)
-	rs := newRoomSelector(roomIDs)
+	rs := newRoomSelector(roomIDs, cfg.cycleCommitteeLabRooms)
 
 	coord := &coordinator{
 		finder:       f,

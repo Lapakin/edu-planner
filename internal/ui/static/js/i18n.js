@@ -115,7 +115,9 @@ const TRANSLATIONS = {
       isContract:                    'Контракт',
       educationStart:                'Початок навчання',
       educationEnd:                  'Кінець навчання',
-      hoursPerLesson:                'Годин на пару',
+      slotType:                      'Тип слоту',
+      weekday:                       'День тижня',
+      room:                          'Аудиторія',
       maxIdenticalLessonsPerDay:     'Макс. однакових пар на день',
       maxStudyHoursPerDay:           'Макс. навч. годин на день',
       maxTeacherHoursPerWeek:        'Макс. годин викладача на тиждень',
@@ -124,6 +126,11 @@ const TRANSLATIONS = {
       maxGroupLessonsPerDay:         'Макс. пар групи на день',
       maxTeacherLessonsPerDay:       'Макс. пар викладача на день',
       noGapsInGroupSchedule:         'Без вікон у розкладі групи',
+      lessonsPerClass:               'Тривалість заняття (акад. год.)',
+      studyDaysMask:                 'Маска навчальних днів',
+      maxConsecutiveTeacherLessons:  'Макс. пар підряд для викладача',
+      timePriority:                  'Пріоритет часу занять',
+      allowFlowLessons:              'Дозволити потокові заняття',
       lecturesHours:                 'Лекції (год.)',
       laboratoryHours:               'Лабораторні (год.)',
       practicalHours:                'Практичні (год.)',
@@ -165,6 +172,8 @@ const TRANSLATIONS = {
       scheduleTemplateSettings:  'Налаштування шаблону',
       scheduleRestrictions:      'Обмеження розкладу',
       scheduleTemplates:         'Шаблони розкладу',
+      teacherSlotPreferences:    'Переваги слотів викладача',
+      cycleCommitteeLabRooms:    'Лабораторні аудиторії комісій',
       users:                     'Користувачі',
     },
 
@@ -182,6 +191,32 @@ const TRANSLATIONS = {
     roomTypes: {
       auditorium:  'Аудиторія',
       laboratory:  'Лабораторія',
+    },
+
+    lessonsPerClass: {
+      one:   '1 акад. година',
+      two:   '2 акад. години (стандартна пара)',
+      three: '3 акад. години',
+    },
+
+    timePriority: {
+      none:      'Без пріоритету',
+      morning:   'Перша половина дня',
+      afternoon: 'Друга половина дня',
+    },
+
+    weekdays: {
+      monday:    'Понеділок',
+      tuesday:   'Вівторок',
+      wednesday: 'Середа',
+      thursday:  'Четвер',
+      friday:    'П\'ятниця',
+      saturday:  'Субота',
+    },
+
+    slotTypes: {
+      preferred: 'Бажаний',
+      forbidden: 'Заборонений',
     },
 
     roles: {
@@ -221,10 +256,12 @@ const TRANSLATIONS = {
       workloadDistributions:'Розподіл навантаження',
       workloadAssignments:  'Призначення навантаження',
       /* Schedule */
-      templateSettings:    'Налаштування шаблону',
-      restrictions:        'Обмеження',
-      templates:           'Шаблони',
-      generate:            'Генерація',
+      templateSettings:        'Налаштування шаблону',
+      restrictions:            'Обмеження',
+      templates:               'Шаблони',
+      generate:                'Генерація',
+      teacherSlotPreferences:  'Переваги слотів',
+      cycleCommitteeLabRooms:  'Лаб. аудиторії',
     },
 
     generate: {
@@ -402,7 +439,9 @@ const TRANSLATIONS = {
       isContract:                    'Contract',
       educationStart:                'Education start',
       educationEnd:                  'Education end',
-      hoursPerLesson:                'Hours per lesson',
+      slotType:                      'Slot type',
+      weekday:                       'Weekday',
+      room:                          'Room',
       maxIdenticalLessonsPerDay:     'Max identical lessons per day',
       maxStudyHoursPerDay:           'Max study hours per day',
       maxTeacherHoursPerWeek:        'Max teacher hours per week',
@@ -411,6 +450,11 @@ const TRANSLATIONS = {
       maxGroupLessonsPerDay:         'Max group lessons per day',
       maxTeacherLessonsPerDay:       'Max teacher lessons per day',
       noGapsInGroupSchedule:         'No gaps in group schedule',
+      lessonsPerClass:               'Lesson duration (acad. hrs)',
+      studyDaysMask:                 'Study days mask',
+      maxConsecutiveTeacherLessons:  'Max consecutive teacher lessons',
+      timePriority:                  'Time priority',
+      allowFlowLessons:              'Allow flow lessons',
       lecturesHours:                 'Lectures (hrs)',
       laboratoryHours:               'Laboratory (hrs)',
       practicalHours:                'Practical (hrs)',
@@ -448,6 +492,8 @@ const TRANSLATIONS = {
       scheduleTemplateSettings:  'Template settings',
       scheduleRestrictions:      'Schedule restrictions',
       scheduleTemplates:         'Schedule templates',
+      teacherSlotPreferences:    'Teacher slot preferences',
+      cycleCommitteeLabRooms:    'Cycle committee lab rooms',
       users:                     'Users',
     },
 
@@ -465,6 +511,32 @@ const TRANSLATIONS = {
     roomTypes: {
       auditorium: 'Auditorium',
       laboratory: 'Laboratory',
+    },
+
+    lessonsPerClass: {
+      one:   '1 acad. hour',
+      two:   '2 acad. hours (standard)',
+      three: '3 acad. hours',
+    },
+
+    timePriority: {
+      none:      'No priority',
+      morning:   'First half of day',
+      afternoon: 'Second half of day',
+    },
+
+    weekdays: {
+      monday:    'Monday',
+      tuesday:   'Tuesday',
+      wednesday: 'Wednesday',
+      thursday:  'Thursday',
+      friday:    'Friday',
+      saturday:  'Saturday',
+    },
+
+    slotTypes: {
+      preferred: 'Preferred',
+      forbidden: 'Forbidden',
     },
 
     roles: {
@@ -504,10 +576,12 @@ const TRANSLATIONS = {
       workloadDistributions: 'Workload distributions',
       workloadAssignments:   'Workload assignments',
       /* Schedule */
-      templateSettings: 'Template settings',
-      restrictions:     'Restrictions',
-      templates:        'Templates',
-      generate:         'Generate',
+      templateSettings:        'Template settings',
+      restrictions:            'Restrictions',
+      templates:               'Templates',
+      generate:                'Generate',
+      teacherSlotPreferences:  'Slot preferences',
+      cycleCommitteeLabRooms:  'Lab rooms',
     },
 
     generate: {

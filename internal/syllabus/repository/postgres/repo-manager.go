@@ -80,6 +80,14 @@ func (rm *RepoManager) NewScheduleRestrictionRepo(db sqlx.ExtContext) repository
 	return NewScheduleRestrictionRepository(db)
 }
 
+func (rm *RepoManager) NewTeacherSlotPreferenceRepo(db sqlx.ExtContext) repository.TeacherSlotPreferenceRepository {
+	return NewTeacherSlotPreferenceRepository(db)
+}
+
+func (rm *RepoManager) NewCycleCommitteeLabRoomRepo(db sqlx.ExtContext) repository.CycleCommitteeLabRoomRepository {
+	return NewCycleCommitteeLabRoomRepository(db)
+}
+
 func (rm *RepoManager) NewUserRepo(db sqlx.ExtContext) repository.UserRepository {
 	return NewUserRepository(db)
 }

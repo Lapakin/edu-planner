@@ -108,3 +108,30 @@ func (a *availability) getBusyLessonNumbers(d date, participantID uint64) []int 
 	}
 	return busy
 }
+
+// wouldExceedConsecutive returns true if placing a lesson at lessonNumber for
+// teacherID on date d would create a consecutive run longer than maxConsecutive.
+// A maxConsecutive value of 0 means no limit (always returns false).
+func (a *availability) wouldExceedConsecutive(d date, teacherID uint64, lessonNumber, maxConsecutive int) bool {
+	if maxConsecutive <= 0 {
+		return false
+	}
+	busy := make(map[int]bool)
+	if a.data[d] != nil && a.data[d][teacherID] != nil {
+		for ln, status := range a.data[d][teacherID] {
+			if status == statusHaveLesson {
+				busy[ln] = true
+			}
+		}
+	}
+	busy[lessonNumber] = true
+
+	run := 1
+	for ln := lessonNumber - 1; busy[ln]; ln-- {
+		run++
+	}
+	for ln := lessonNumber + 1; busy[ln]; ln++ {
+		run++
+	}
+	return run > maxConsecutive
+}

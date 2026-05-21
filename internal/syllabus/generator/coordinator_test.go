@@ -3,9 +3,9 @@ package generator
 import "testing"
 
 func TestNewCoordinator_AllFieldsNonNil(t *testing.T) {
-	ts := makeTemplateSetting(2.0, 8, 40)
+	ts := makeTemplateSetting(2, 8, 40)
 	bells := makeBellSchedules(4)
-	cfg := newSettings(ts, bells, nil)
+	cfg := newSettings(ts, bells, nil, nil, nil)
 	roomIDs := []uint64{101, 102}
 
 	coord := newCoordinator(cfg, roomIDs)
@@ -40,9 +40,9 @@ func TestNewCoordinator_AllFieldsNonNil(t *testing.T) {
 }
 
 func TestNewCoordinator_EmptyRoomIDs(t *testing.T) {
-	ts := makeTemplateSetting(2.0, 8, 40)
+	ts := makeTemplateSetting(2, 8, 40)
 	bells := makeBellSchedules(4)
-	cfg := newSettings(ts, bells, nil)
+	cfg := newSettings(ts, bells, nil, nil, nil)
 
 	coord := newCoordinator(cfg, []uint64{})
 	if coord == nil {

@@ -76,6 +76,7 @@ func NewFetchScheduleTemplateSettingsHandler(svc service.ScheduleTemplateSetting
 	return func(c *gin.Context) {
 		filters, err := rest.CreateFiltersFromQueries(c, rest.Queries{
 			{Param: domain.IDsParam, ValidateFunc: utils.ValidateSliceUInt64},
+			{Param: domain.AcademicYearIDParam, ValidateFunc: utils.ValidateUInt64},
 		})
 		if err != nil {
 			rest.RespondError(c, http.StatusBadRequest, rest.ErrParseQuery)

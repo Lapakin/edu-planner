@@ -7,7 +7,7 @@ import (
 )
 
 func makeSettingsForLimiter(maxGroupPerDay, maxTeacherPerDay int) *settings {
-	ts := makeTemplateSetting(2.0, maxGroupPerDay*2, 40)
+	ts := makeTemplateSetting(2, maxGroupPerDay*2, 40)
 	bells := makeBellSchedules(maxGroupPerDay + 2)
 	r := &domain.ScheduleRestriction{
 		MaxGroupLessonsPerDay:   maxGroupPerDay,
@@ -15,7 +15,7 @@ func makeSettingsForLimiter(maxGroupPerDay, maxTeacherPerDay int) *settings {
 		MinGroupLessonsPerDay:   0,
 		NoGapsInGroupSchedule:   false,
 	}
-	return newSettings(ts, bells, r)
+	return newSettings(ts, bells, r, nil, nil)
 }
 
 func TestLimiter_CanAddLessonForGroup(t *testing.T) {

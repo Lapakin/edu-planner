@@ -15,6 +15,8 @@ type Workload struct {
 	totalHours             int
 	isSplitting            bool
 	subGroupNumber         *uint64
+	cycleCommitteeID       uint64
+	isLab                  bool
 }
 
 // workloadDistributor distributes Workloads across numerator and denominator weeks.
@@ -71,7 +73,7 @@ func (wd *workloadDistributor) distributeWorkload(w *Workload, weeksPerPeriod in
 		return &distributedWorkload{workload: w, numeratorLessons: 0, denominatorLessons: 0}, nil
 	}
 
-	hoursPerLesson := wd.cfg.hoursPerLesson
+	hoursPerLesson := float64(wd.cfg.lessonsPerClass)
 	if hoursPerLesson <= 0 {
 		hoursPerLesson = 2
 	}
@@ -111,13 +113,15 @@ func (wd *workloadDistributor) createLessons(w *Workload, count int) []*lesson {
 	lessons := make([]*lesson, 0, count)
 	for range count {
 		l := &lesson{
-			groupID:     w.groupID,
-			subjectID:   w.subjectID,
-			subLessons:  nil,
-			format:      formatUnited,
-			isScheduled: false,
-			lType:       lessonTypeRegular,
-			workloadID:  w.workloadDistributionID,
+			groupID:          w.groupID,
+			subjectID:        w.subjectID,
+			subLessons:       nil,
+			format:           formatUnited,
+			isScheduled:      false,
+			lType:            lessonTypeRegular,
+			workloadID:       w.workloadDistributionID,
+			cycleCommitteeID: w.cycleCommitteeID,
+			isLab:            w.isLab,
 		}
 
 		if w.isSplitting && w.subGroupNumber != nil {
@@ -142,6 +146,7 @@ func buildWorkloadsFromDomain(
 	assignments domain.WorkloadAssignments,
 	studyPlans domain.StudyPlans,
 	groups domain.Groups,
+	disciplines domain.Disciplines,
 ) []*Workload {
 	// Build lookup maps
 	assignmentsByDistID := make(map[uint64]domain.WorkloadAssignments)
@@ -157,6 +162,11 @@ func buildWorkloadsFromDomain(
 	groupByID := make(map[uint64]*domain.Group)
 	for _, g := range groups {
 		groupByID[g.ID] = g
+	}
+
+	disciplineByID := make(map[uint64]*domain.Discipline)
+	for _, d := range disciplines {
+		disciplineByID[d.ID] = d
 	}
 
 	var workloads []*Workload
@@ -185,6 +195,12 @@ func buildWorkloadsFromDomain(
 			continue
 		}
 
+		// Resolve cycle committee ID from the discipline
+		var cycleCommitteeID uint64
+		if disc := disciplineByID[subjectID]; disc != nil {
+			cycleCommitteeID = disc.CycleCommitteeID
+		}
+
 		for _, a := range distAssignments {
 			hours := totalHours
 			if a.AssignedHours != nil {
@@ -199,6 +215,8 @@ func buildWorkloadsFromDomain(
 				totalHours:             hours,
 				isSplitting:            g.IsSplitting,
 				subGroupNumber:         nil,
+				cycleCommitteeID:       cycleCommitteeID,
+				isLab:                  a.RoleType != nil && *a.RoleType != "Лектор",
 			}
 
 			workloads = append(workloads, w)

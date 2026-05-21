@@ -31,15 +31,18 @@ function openModal(title, bodyEl, footerEl) {
   const foot = document.getElementById('modal-footer');
   body.innerHTML = '';
   foot.innerHTML = '';
+  body.removeAttribute('style');
   if (bodyEl instanceof HTMLElement) body.appendChild(bodyEl); else body.innerHTML = bodyEl || '';
   if (footerEl instanceof HTMLElement) foot.appendChild(footerEl); else foot.innerHTML = footerEl || '';
-  document.getElementById('modal').classList.remove('modal-fullscreen');
+  const modal = document.getElementById('modal');
+  modal.classList.remove('modal-fullscreen', 'modal-lg', 'modal-sm');
   document.getElementById('modal-overlay').classList.remove('hidden');
 }
 
 function closeModal() {
   document.getElementById('modal-overlay').classList.add('hidden');
-  document.getElementById('modal').classList.remove('modal-fullscreen');
+  document.getElementById('modal').classList.remove('modal-fullscreen', 'modal-lg', 'modal-sm');
+  document.getElementById('modal-body').removeAttribute('style');
 }
 
 function closeModalOnOverlay(e) {
@@ -123,11 +126,13 @@ const App = {
     document.querySelectorAll('.admin-only').forEach(el => {
       el.classList.toggle('hidden', role !== 'admin');
     });
-    // Set profile button initial letter
+    // Show user email in header and set profile button initial letter
     const email   = this.state.user?.email || '';
     const initial = (email[0] || 'U').toUpperCase();
     const profileBtn = document.getElementById('profile-btn');
     if (profileBtn) profileBtn.textContent = initial;
+    const headerEmail = document.getElementById('header-email');
+    if (headerEmail) headerEmail.textContent = email;
     // Sync lang buttons
     applyTranslations();
   },
@@ -258,8 +263,13 @@ const App = {
     const key = Object.keys(ENTITY_CONFIGS).find(k => ENTITY_CONFIGS[k].apiPath === apiPath);
     if (key) {
       try {
-        const rows = await Api.get(apiPath);
-        this.cache[key] = rows || [];
+        const rows = await Api.get(apiPath) || [];
+        if (key === 'users') {
+          rows.forEach(u => {
+            u.full_name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+          });
+        }
+        this.cache[key] = rows;
       } catch { /* ignore */ }
     }
   },
@@ -338,7 +348,8 @@ const App = {
   // ── Special row actions ────────────────────────────────────
   async toggleAcademicYear(row, mgr) {
     const activating = !row.is_active;
-    const path = `/api/syllabus/academic-years/${row.id}/${row.is_active ? 'deactivate' : 'activate'}`;
+    if (!activating) return;
+    const path = `/api/syllabus/academic-years/${row.id}/activate`;
     try {
       await Api.post(path, null);
       if (activating) {
@@ -399,8 +410,8 @@ const App = {
     const cards = [
       { i18nKey: 'entities.academicYears', cacheKey: 'academic-years', href: '#/academic-settings/academic-years', icon: 'icon-calendar' },
       { i18nKey: 'entities.departments',   cacheKey: 'departments',     href: '#/reference/departments',   icon: 'icon-book' },
-      { i18nKey: 'entities.teachers',      cacheKey: 'teachers',        href: '#/reference/teachers',      icon: 'icon-users' },
       { i18nKey: 'entities.groups',        cacheKey: 'groups',          href: '#/reference/groups',        icon: 'icon-settings' },
+      { i18nKey: 'entities.disciplines',   cacheKey: 'disciplines',     href: '#/reference/disciplines',   icon: 'icon-book' },
       { i18nKey: 'entities.scheduleTemplates', cacheKey: 'schedule-templates', href: '#/schedule/schedule-templates', icon: 'icon-calendar' },
     ];
 
@@ -469,7 +480,6 @@ const App = {
       { key: 'rooms',           label: t('tabs.rooms') },
       { key: 'specialties',     label: t('tabs.specialties') },
       { key: 'cycle-committees',label: t('tabs.cycleCommittees') },
-      { key: 'teachers',        label: t('tabs.teachers') },
       { key: 'disciplines',     label: t('tabs.disciplines') },
       { key: 'groups',          label: t('tabs.groups') },
     ];
@@ -505,13 +515,16 @@ const App = {
   async renderProfile(main) {
     this.currentMgr = null;
     const jwtUser = this.state.user;
-    const userId = jwtUser?.id;
+    const userId = jwtUser?.user_id;
     main.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
 
-    let user = jwtUser || {};
+    let user = {};
     try {
-      if (userId) user = await Api.get(`/api/auth/users/${userId}`) || jwtUser;
-    } catch { /* use jwt claims as fallback */ }
+      if (userId) user = await Api.get(`/api/auth/users/${userId}`) || {};
+    } catch { /* ignore */ }
+    if (!user.id) {
+      user = { id: userId, email: jwtUser?.email || '', role: jwtUser?.role || 'user', ...user };
+    }
 
     const renderPage = (u) => {
       main.innerHTML = `
@@ -553,7 +566,11 @@ const App = {
         btn.disabled = true;
         try {
           const updated = {
-            ...u,
+            id: u.id,
+            email: u.email,
+            role: u.role,
+            is_active: u.is_active ?? true,
+            is_deleted: u.is_deleted ?? false,
             first_name: main.querySelector('#prof-first').value.trim(),
             last_name: main.querySelector('#prof-last').value.trim(),
             patronymic: main.querySelector('#prof-patron').value.trim() || null,
@@ -679,6 +696,9 @@ const App = {
     if (this.cache['users']) return;
     try {
       const users = await Api.get('/api/auth/users');
+      (users || []).forEach(u => {
+        u.full_name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+      });
       this.cache['users'] = users || [];
     } catch { this.cache['users'] = []; }
   },
@@ -687,6 +707,9 @@ const App = {
     if (this.cache['teacher-users']) return;
     try {
       const users = await Api.get('/api/auth/users?role=teacher');
+      (users || []).forEach(u => {
+        u.full_name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+      });
       this.cache['teacher-users'] = users || [];
     } catch { this.cache['teacher-users'] = []; }
   },
@@ -697,10 +720,8 @@ const App = {
   async renderGenerateSchedule(container) {
     this.currentMgr = null;
     await this.ensureCache('semesters');
-    await this.ensureCache('groups');
 
     const semesters = this.cache['semesters'] || [];
-    const groups    = this.cache['groups']    || [];
 
     container.innerHTML = `
       <div class="gen-layout">
@@ -714,17 +735,6 @@ const App = {
                 `<option value="${s.id}">${s.period_start?.slice(0,10)} – ${s.period_end?.slice(0,10)}</option>`
               ).join('')}
             </select>
-          </div>
-          <div class="form-field">
-            <label>${t('generate.groupsLabel')}</label>
-            <div class="groups-checklist" id="gen-groups">
-              ${groups.map(g =>
-                `<label class="check-item">
-                  <input type="checkbox" value="${g.id}" checked>
-                  <span>${g.name}</span>
-                </label>`
-              ).join('')}
-            </div>
           </div>
           <button class="btn btn-primary" style="width:100%;margin-bottom:12px" id="gen-btn">${t('generate.generateBtn')}</button>
           <div class="divider"></div>
@@ -748,38 +758,768 @@ const App = {
     }
 
     container.querySelector('#gen-settings-btn').addEventListener('click', () => {
-      this._openSettingsModal('schedule-template-settings', t('entities.scheduleTemplateSettings'));
+      this._openTemplateSettingsModal();
     });
 
     container.querySelector('#gen-restrict-btn').addEventListener('click', () => {
-      this._openSettingsModal('schedule-restrictions', t('entities.scheduleRestrictions'));
+      this._openScheduleRestrictionsModal();
     });
 
     container.querySelector('#gen-btn').addEventListener('click', async () => {
-      const semId    = container.querySelector('#gen-semester').value;
+      const semId = container.querySelector('#gen-semester').value;
       if (!semId) { Toast.warning(t('generate.noSemester')); return; }
-      const groupIds = [...container.querySelectorAll('#gen-groups input:checked')].map(c => Number(c.value));
-      await this._doGenerate(semId, groupIds, container.querySelector('#gen-main'));
+      await this._doGenerate(semId, container.querySelector('#gen-main'));
     });
   },
 
-  async _openSettingsModal(entityKey, title) {
-    const body = document.createElement('div');
-    body.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
-    const foot = document.createElement('div');
-    foot.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">${t('actions.close')}</button>`;
-    openModal(title, body, foot);
-    document.getElementById('modal').classList.add('modal-fullscreen');
-    await this.renderEntityTab(entityKey, body);
+  // ── Template Settings Modal ─────────────────────────────────
+  async _openTemplateSettingsModal() {
+    const yearId = this.state.yearId;
+    if (!yearId) { Toast.warning(t('messages.noAcademicYear')); return; }
+
+    const bodyEl = document.createElement('div');
+    bodyEl.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;';
+    bodyEl.innerHTML = '<div class="loading-state" style="padding:20px"><div class="spinner"></div></div>';
+    const footEl = document.createElement('div');
+    footEl.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;';
+
+    openModal(t('entities.scheduleTemplateSettings'), bodyEl, footEl);
+    document.getElementById('modal').classList.add('modal-lg');
+    const mb = document.getElementById('modal-body');
+    mb.style.padding = '0';
+    mb.style.display = 'flex';
+    mb.style.flexDirection = 'column';
+    mb.style.overflow = 'hidden';
+
+    let setting;
+    try {
+      const list = await Api.get(`/api/syllabus/schedule-template-settings?academic_year_id=${yearId}`);
+      setting = (list && list.length > 0) ? { ...list[list.length - 1] } : {
+        id: 0, academic_year_id: Number(yearId),
+        lessons_per_class: 2, study_days_mask: 31,
+        max_identical_lessons_per_day: 2, max_study_hours_per_day: 8,
+        max_teacher_hours_per_week: 20, max_group_lesson_hours_per_week: 36,
+      };
+    } catch (e) {
+      bodyEl.innerHTML = `<div class="alert alert-error" style="margin:20px">${e.message}</div>`;
+      return;
+    }
+
+    const DAYS = [
+      { label: 'Пн', bit: 1 },
+      { label: 'Вт', bit: 2 },
+      { label: 'Ср', bit: 4 },
+      { label: 'Чт', bit: 8 },
+      { label: 'Пт', bit: 16 },
+      { label: 'Сб', bit: 32 },
+      { label: 'Нд', bit: 64, disabled: true },
+    ];
+    const dayButtonsHTML = DAYS.map(d => {
+      const isActive = (setting.study_days_mask & d.bit) !== 0;
+      const cls = ['sm-day', isActive ? 'active' : '', d.disabled ? 'sm-day-disabled' : ''].filter(Boolean).join(' ');
+      return `<div class="${cls}" data-bit="${d.bit}">${d.label}</div>`;
+    }).join('');
+
+    bodyEl.innerHTML = `
+      <div class="sm-tabs">
+        <button class="sm-tab active" data-panel="format">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          Формат пари <span class="sm-tab-badge">2</span>
+        </button>
+        <button class="sm-tab" data-panel="calendar">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Календар <span class="sm-tab-badge">1</span>
+        </button>
+        <button class="sm-tab" data-panel="daily">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+          Денні ліміти <span class="sm-tab-badge">2</span>
+        </button>
+        <button class="sm-tab" data-panel="weekly">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+          Тижневі ліміти <span class="sm-tab-badge">2</span>
+        </button>
+      </div>
+      <div class="sm-panels">
+        <div class="sm-panel active" data-panel="format">
+          <div class="sm-constraint">
+            <div class="sm-constraint-info">
+              <div class="sm-constraint-label">
+                <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+                Тривалість заняття
+              </div>
+              <div class="sm-constraint-desc">Кількість академічних годин в одній парі.</div>
+            </div>
+            <div class="sm-control">
+              <select class="sm-select" id="sms-lessons-per-class">
+                <option value="1" ${setting.lessons_per_class === 1 ? 'selected' : ''}>1 акад. година</option>
+                <option value="2" ${setting.lessons_per_class === 2 ? 'selected' : ''}>2 акад. години (стандартна пара)</option>
+                <option value="3" ${setting.lessons_per_class === 3 ? 'selected' : ''}>3 акад. години</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm-panel" data-panel="calendar">
+          <div class="sm-constraint">
+            <div class="sm-constraint-info">
+              <div class="sm-constraint-label">
+                <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+                Навчальні дні
+              </div>
+              <div class="sm-constraint-desc">Дні тижня, у які формується розклад.</div>
+            </div>
+            <div class="sm-control">
+              <div class="sm-day-strip" id="sms-day-strip">${dayButtonsHTML}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm-panel" data-panel="daily">
+          <div class="sm-constraint">
+            <div class="sm-constraint-info">
+              <div class="sm-constraint-label">
+                <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+                Макс. однакових пар на день
+              </div>
+              <div class="sm-constraint-desc">Скільки пар з однієї дисципліни може бути в один день.</div>
+            </div>
+            <div class="sm-control">
+              <input type="number" class="sm-num-input" id="sms-max-identical" value="${setting.max_identical_lessons_per_day}" min="1" max="6">
+              <span class="sm-unit-label">пар</span>
+            </div>
+          </div>
+          <div class="sm-constraint">
+            <div class="sm-constraint-info">
+              <div class="sm-constraint-label">
+                <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div>
+                Макс. навчальних годин на день
+              </div>
+              <div class="sm-constraint-desc">Сумарна верхня межа аудиторних годин у розкладі групи за день.</div>
+            </div>
+            <div class="sm-control">
+              <input type="number" class="sm-num-input" id="sms-max-hours-day" value="${setting.max_study_hours_per_day}" min="2" max="12">
+              <span class="sm-unit-label">год</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm-panel" data-panel="weekly">
+          <div class="sm-constraint">
+            <div class="sm-constraint-info">
+              <div class="sm-constraint-label">
+                <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-3-3.87M4 21v-2a4 4 0 013-3.87"/><circle cx="12" cy="7" r="4"/></svg></div>
+                Макс. годин викладача на тиждень
+              </div>
+              <div class="sm-constraint-desc">Верхня межа аудиторного навантаження одного викладача за тиждень.</div>
+            </div>
+            <div class="sm-control">
+              <input type="number" class="sm-num-input" id="sms-max-teacher-week" value="${setting.max_teacher_hours_per_week}" min="1" max="40">
+              <span class="sm-unit-label">год</span>
+            </div>
+          </div>
+          <div class="sm-constraint">
+            <div class="sm-constraint-info">
+              <div class="sm-constraint-label">
+                <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
+                Макс. годин занять групи на тиждень
+              </div>
+              <div class="sm-constraint-desc">Сумарна верхня межа годин у розкладі однієї групи за тиждень.</div>
+            </div>
+            <div class="sm-control">
+              <input type="number" class="sm-num-input" id="sms-max-group-week" value="${setting.max_group_lesson_hours_per_week ?? 36}" min="1" max="60">
+              <span class="sm-unit-label">год</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    // Tab switching
+    bodyEl.querySelectorAll('.sm-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        bodyEl.querySelectorAll('.sm-tab').forEach(t => t.classList.remove('active'));
+        bodyEl.querySelectorAll('.sm-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        bodyEl.querySelector(`.sm-panel[data-panel="${tab.dataset.panel}"]`).classList.add('active');
+      });
+    });
+
+    // Day picker
+    bodyEl.querySelectorAll('.sm-day:not(.sm-day-disabled)').forEach(day => {
+      day.addEventListener('click', () => day.classList.toggle('active'));
+    });
+
+    // Footer
+    const statusDot = document.createElement('span');
+    statusDot.className = 'sm-status-dot';
+    const statusText = document.createElement('span');
+    statusText.textContent = 'Є незбережені зміни';
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'sm-modal-status';
+    statusDiv.append(statusDot, statusText);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-secondary';
+    cancelBtn.textContent = t('actions.cancel');
+    cancelBtn.addEventListener('click', closeModal);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-primary';
+    saveBtn.innerHTML = `<svg class="icon"><use href="#icon-save"/></svg> ${t('actions.save')}`;
+
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display:flex;gap:8px;';
+    actions.append(cancelBtn, saveBtn);
+    footEl.append(statusDiv, actions);
+
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      try {
+        let mask = 0;
+        bodyEl.querySelectorAll('.sm-day:not(.sm-day-disabled)').forEach(d => {
+          if (d.classList.contains('active')) mask |= Number(d.dataset.bit);
+        });
+        const payload = {
+          ...setting,
+          academic_year_id: Number(yearId),
+          lessons_per_class: Number(bodyEl.querySelector('#sms-lessons-per-class').value),
+          study_days_mask: mask,
+          max_identical_lessons_per_day: Number(bodyEl.querySelector('#sms-max-identical').value),
+          max_study_hours_per_day: Number(bodyEl.querySelector('#sms-max-hours-day').value),
+          max_teacher_hours_per_week: Number(bodyEl.querySelector('#sms-max-teacher-week').value),
+          max_group_lesson_hours_per_week: Number(bodyEl.querySelector('#sms-max-group-week').value),
+        };
+        if (setting.id && setting.id > 0) {
+          await Api.put('/api/syllabus/schedule-template-settings', [payload]);
+        } else {
+          const created = await Api.post('/api/syllabus/schedule-template-settings', [payload]);
+          if (created && created[0]) setting.id = created[0].id;
+        }
+        delete this.cache['schedule-template-settings'];
+        Toast.success(t('messages.saved'));
+        statusDot.classList.add('saved');
+        statusText.textContent = 'Усі зміни збережено';
+      } catch (e) {
+        Toast.error(e.message);
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
   },
 
-  async _doGenerate(semId, groupIds, mainEl) {
+  // ── Schedule Restrictions Modal ──────────────────────────────
+  // ── Schedule Restrictions Modal ──────────────────────────────
+  async _openScheduleRestrictionsModal() {
+    const yearId = this.state.yearId;
+    if (!yearId) { Toast.warning(t('messages.noAcademicYear')); return; }
+
+    const bodyEl = document.createElement('div');
+    bodyEl.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;';
+    bodyEl.innerHTML = '<div class="loading-state" style="padding:20px"><div class="spinner"></div></div>';
+    const footEl = document.createElement('div');
+    footEl.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;';
+
+    openModal(t('entities.scheduleRestrictions'), bodyEl, footEl);
+    document.getElementById('modal').classList.add('modal-lg');
+    const mb = document.getElementById('modal-body');
+    mb.style.padding = '0';
+    mb.style.display = 'flex';
+    mb.style.flexDirection = 'column';
+    mb.style.overflow = 'hidden';
+
+    // Load all data in parallel
+    let restriction, allPreferences, allLabRooms, cycleCommittees, rooms, teachers;
+    try {
+      const getCached = async (key, url) => {
+        if (this.cache[key] && this.cache[key].length > 0) return this.cache[key];
+        const data = await Api.get(url);
+        this.cache[key] = data || [];
+        return this.cache[key];
+      };
+      const [restrictList, prefs, labRooms, cc, rm, tch] = await Promise.all([
+        Api.get(`/api/syllabus/schedule-restrictions?academic_year_id=${yearId}`),
+        Api.get(`/api/syllabus/teacher-slot-preferences?academic_year_id=${yearId}`),
+        Api.get(`/api/syllabus/cycle-committee-lab-rooms?academic_year_id=${yearId}`),
+        getCached('cycle-committees', '/api/syllabus/cycle-committees'),
+        getCached('rooms', '/api/syllabus/rooms'),
+        Api.get(`/api/syllabus/teachers?academic_year_id=${yearId}`),
+      ]);
+      restriction = (restrictList && restrictList.length > 0) ? { ...restrictList[restrictList.length - 1] } : {
+        id: 0, academic_year_id: Number(yearId),
+        min_group_lessons_per_day: 2, max_group_lessons_per_day: 4,
+        max_teacher_lessons_per_day: 5, max_consecutive_teacher_lessons: 2,
+        time_priority: 'none', allow_flow_lessons: true, no_gaps_in_group_schedule: true,
+      };
+      allPreferences = prefs || [];
+      allLabRooms = labRooms || [];
+      cycleCommittees = cc || [];
+      rooms = rm || [];
+      teachers = tch || [];
+    } catch (e) {
+      bodyEl.innerHTML = `<div class="alert alert-error" style="margin:20px">${e.message}</div>`;
+      return;
+    }
+
+    // Lab room state: Map "ccId_roomId" -> {id, cycle_committee_id, room_id, academic_year_id}
+    const labRoomMap = new Map(
+      allLabRooms.map(lr => [`${lr.cycle_committee_id}_${lr.room_id}`, { ...lr }])
+    );
+    const originalLabKeys = new Set(labRoomMap.keys());
+
+    const weekdayShort = {
+      monday: 'Пн', tuesday: 'Вт', wednesday: 'Ср',
+      thursday: 'Чт', friday: 'Пт', saturday: 'Сб',
+    };
+
+    // Two sub-views: main tabs and teacher preferences sub-panel
+    const mainView = document.createElement('div');
+    mainView.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;';
+    const subPanel = document.createElement('div');
+    subPanel.style.cssText = 'display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;';
+    bodyEl.innerHTML = '';
+    bodyEl.append(mainView, subPanel);
+
+    const renderMainView = () => {
+      const forbCount = allPreferences.filter(p => p.slot_type === 'forbidden').length;
+      const prefCount = allPreferences.filter(p => p.slot_type === 'preferred').length;
+      const ccOptions = cycleCommittees.map(cc =>
+        `<option value="${cc.id}">${cc.name}</option>`
+      ).join('');
+
+      mainView.innerHTML = `
+        <div class="sm-tabs">
+          <button class="sm-tab active" data-panel="load">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+            Навантаження <span class="sm-tab-badge">4</span>
+          </button>
+          <button class="sm-tab" data-panel="time">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Час і календар <span class="sm-tab-badge">4</span>
+          </button>
+          <button class="sm-tab" data-panel="space">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg>
+            Аудиторії <span class="sm-tab-badge">1</span>
+          </button>
+          <button class="sm-tab" data-panel="org">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="17" cy="7" r="3"/><path d="M21 21v-2a4 4 0 00-3-3.87"/></svg>
+            Організаційні <span class="sm-tab-badge">1</span>
+          </button>
+        </div>
+        <div class="sm-panels">
+          <div class="sm-panel active" data-panel="load">
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
+                  Макс. пар на день для студентів
+                </div>
+                <div class="sm-constraint-desc">Верхня межа кількості пар у розкладі групи за один навчальний день.</div>
+              </div>
+              <div class="sm-control">
+                <input type="number" class="sm-num-input" id="smr-max-group-day" value="${restriction.max_group_lessons_per_day}" min="1" max="8">
+                <span class="sm-unit-label">пар</span>
+              </div>
+            </div>
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-3-3.87M4 21v-2a4 4 0 013-3.87"/><circle cx="12" cy="7" r="4"/></svg></div>
+                  Макс. пар на день для викладачів
+                </div>
+                <div class="sm-constraint-desc">Скільки пар максимум може провести один викладач протягом дня.</div>
+              </div>
+              <div class="sm-control">
+                <input type="number" class="sm-num-input" id="smr-max-teacher-day" value="${restriction.max_teacher_lessons_per_day}" min="1" max="8">
+                <span class="sm-unit-label">пар</span>
+              </div>
+            </div>
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 19 7.5"/></svg></div>
+                  Безперервна робота викладача
+                </div>
+                <div class="sm-constraint-desc">Максимум пар підряд без перерви для одного викладача (0 — без ліміту).</div>
+              </div>
+              <div class="sm-control">
+                <input type="number" class="sm-num-input" id="smr-consecutive" value="${restriction.max_consecutive_teacher_lessons}" min="0" max="8">
+                <span class="sm-unit-label">підряд</span>
+              </div>
+            </div>
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M22 12H2M12 2v10"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></div>
+                  Мін. пар групи на день
+                </div>
+                <div class="sm-constraint-desc">Якщо група має заняття у цей день — мінімальна кількість пар (0 — без ліміту).</div>
+              </div>
+              <div class="sm-control">
+                <input type="number" class="sm-num-input" id="smr-min-group-day" value="${restriction.min_group_lessons_per_day}" min="0" max="4">
+                <span class="sm-unit-label">пар</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sm-panel" data-panel="time">
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div>
+                  Запобігання «вікнам»
+                </div>
+                <div class="sm-constraint-desc">Мінімізувати порожні години між парами у студентів і викладачів.</div>
+              </div>
+              <div class="sm-control">
+                <select class="sm-select" id="smr-no-gaps">
+                  <option value="false" ${!restriction.no_gaps_in_group_schedule ? 'selected' : ''}>Вимкнено</option>
+                  <option value="true" ${restriction.no_gaps_in_group_schedule ? 'selected' : ''}>Виключити повністю</option>
+                </select>
+              </div>
+            </div>
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M4.93 4.93l14.14 14.14"/></svg></div>
+                  Заборонені години викладачів
+                </div>
+                <div class="sm-constraint-desc">Час, коли викладач не може проводити заняття (дистанційне навчання, особистий час).</div>
+              </div>
+              <div class="sm-control">
+                <button class="btn btn-secondary btn-sm" id="smr-forbidden-btn">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  Налаштувати${forbCount > 0 ? ` (${forbCount})` : ''}
+                </button>
+              </div>
+            </div>
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+                  Побажання викладачів
+                </div>
+                <div class="sm-constraint-desc">Пріоритетні години, у які викладач хоче проводити заняття.</div>
+              </div>
+              <div class="sm-control">
+                <button class="btn btn-secondary btn-sm" id="smr-preferred-btn">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  Налаштувати${prefCount > 0 ? ` (${prefCount})` : ''}
+                </button>
+              </div>
+            </div>
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
+                  Пріоритет проведення занять
+                </div>
+                <div class="sm-constraint-desc">Бажана половина дня для розміщення пар у розкладі.</div>
+              </div>
+              <div class="sm-control">
+                <select class="sm-select" id="smr-time-priority">
+                  <option value="none" ${restriction.time_priority === 'none' ? 'selected' : ''}>Без пріоритету</option>
+                  <option value="morning" ${restriction.time_priority === 'morning' ? 'selected' : ''}>У першій половині дня</option>
+                  <option value="afternoon" ${restriction.time_priority === 'afternoon' ? 'selected' : ''}>У другій половині дня</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="sm-panel" data-panel="space">
+            <div class="sm-constraint" style="display:block;">
+              <div class="sm-constraint-label" style="margin-bottom:4px;">
+                <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+                Лабораторні фахових дисциплін
+              </div>
+              <div class="sm-constraint-desc" style="margin-left:34px;margin-bottom:12px;">Виберіть комп'ютерні класи, у яких можуть проводитися лабораторні роботи кафедри.</div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+                <select class="sm-select" id="smr-cycle-committee" style="min-width:200px;flex-shrink:0;">
+                  <option value="">Оберіть циклову комісію…</option>
+                  ${ccOptions}
+                </select>
+                <div class="sm-chips" id="smr-room-chips" style="flex:1;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sm-panel" data-panel="org">
+            <div class="sm-constraint">
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label">
+                  <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="17" cy="7" r="3"/><path d="M21 21v-2a4 4 0 00-3-3.87"/></svg></div>
+                  Потокові заняття (спільні лекції)
+                </div>
+                <div class="sm-constraint-desc">Дозволити одному викладачу вести пару одночасно для кількох груп.</div>
+              </div>
+              <div class="sm-control">
+                <span class="sm-unit-label" id="smr-flow-label">${restriction.allow_flow_lessons ? 'Дозволено' : 'Заборонено'}</span>
+                <button class="sm-toggle ${restriction.allow_flow_lessons ? 'on' : ''}" id="smr-flow-toggle" role="switch" aria-checked="${restriction.allow_flow_lessons}"></button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      // Tab switching
+      mainView.querySelectorAll('.sm-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          mainView.querySelectorAll('.sm-tab').forEach(t => t.classList.remove('active'));
+          mainView.querySelectorAll('.sm-panel').forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          mainView.querySelector(`.sm-panel[data-panel="${tab.dataset.panel}"]`).classList.add('active');
+        });
+      });
+
+      // Flow toggle
+      const flowToggle = mainView.querySelector('#smr-flow-toggle');
+      const flowLabel  = mainView.querySelector('#smr-flow-label');
+      flowToggle.addEventListener('click', () => {
+        flowToggle.classList.toggle('on');
+        const isOn = flowToggle.classList.contains('on');
+        flowToggle.setAttribute('aria-checked', String(isOn));
+        flowLabel.textContent = isOn ? 'Дозволено' : 'Заборонено';
+      });
+
+      // Forbidden / preferred buttons
+      mainView.querySelector('#smr-forbidden-btn').addEventListener('click', () => openSubPanel('forbidden'));
+      mainView.querySelector('#smr-preferred-btn').addEventListener('click', () => openSubPanel('preferred'));
+
+      // Cycle committee → room chips
+      const ccSelect  = mainView.querySelector('#smr-cycle-committee');
+      const chipsArea = mainView.querySelector('#smr-room-chips');
+      const renderChips = (ccId) => {
+        chipsArea.innerHTML = '';
+        if (!ccId) return;
+        rooms.forEach(room => {
+          const key    = `${ccId}_${room.id}`;
+          const active = labRoomMap.has(key);
+          const chip   = document.createElement('button');
+          chip.className = `sm-chip${active ? ' active' : ''}`;
+          chip.textContent = room.name + (active ? ' ✓' : '');
+          chip.dataset.roomId = room.id;
+          chip.dataset.ccId   = ccId;
+          chip.addEventListener('click', () => {
+            const k = `${chip.dataset.ccId}_${chip.dataset.roomId}`;
+            if (labRoomMap.has(k)) {
+              labRoomMap.delete(k);
+              chip.classList.remove('active');
+              chip.textContent = room.name;
+            } else {
+              labRoomMap.set(k, {
+                id: 0,
+                cycle_committee_id: Number(chip.dataset.ccId),
+                room_id: Number(chip.dataset.roomId),
+                academic_year_id: Number(yearId),
+              });
+              chip.classList.add('active');
+              chip.textContent = room.name + ' ✓';
+            }
+          });
+          chipsArea.appendChild(chip);
+        });
+      };
+      ccSelect.addEventListener('change', () => renderChips(ccSelect.value));
+    };
+
+    // Teacher preferences sub-panel
+    const openSubPanel = (slotType) => {
+      mainView.style.display = 'none';
+      subPanel.style.display = 'flex';
+      subPanel.innerHTML = '';
+
+      const title = slotType === 'forbidden' ? 'Заборонені години викладачів' : 'Побажання викладачів';
+
+      const header = document.createElement('div');
+      header.className = 'sm-subpanel-header';
+      const backBtn = document.createElement('button');
+      backBtn.className = 'btn btn-secondary btn-sm';
+      backBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Назад';
+      backBtn.addEventListener('click', () => {
+        subPanel.style.display = 'none';
+        mainView.style.display = 'flex';
+        renderMainView();
+      });
+      const titleEl = document.createElement('span');
+      titleEl.style.cssText = 'font-size:13px;font-weight:600;color:var(--text);';
+      titleEl.textContent = title;
+      header.append(backBtn, titleEl);
+      subPanel.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'sm-subpanel-body';
+      subPanel.appendChild(body);
+
+      const renderPrefList = () => {
+        body.innerHTML = '';
+        const filtered = allPreferences.filter(p => p.slot_type === slotType);
+
+        if (filtered.length === 0) {
+          const empty = document.createElement('div');
+          empty.style.cssText = 'color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;';
+          empty.textContent = 'Немає налаштувань';
+          body.appendChild(empty);
+        } else {
+          filtered.forEach(pref => {
+            const row = document.createElement('div');
+            row.className = 'sm-constraint';
+            row.innerHTML = `
+              <div class="sm-constraint-info">
+                <div class="sm-constraint-label" style="font-size:12.5px;">
+                  Викладач #${pref.teacher_id} &mdash; ${weekdayShort[pref.weekday] || pref.weekday}, пара&nbsp;${pref.lesson_number}
+                </div>
+              </div>
+              <div class="sm-control">
+                <button class="btn btn-sm" style="color:var(--danger);border:1px solid var(--danger);padding:4px 8px;line-height:1;" title="Видалити">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                </button>
+              </div>`;
+            row.querySelector('button').addEventListener('click', async () => {
+              try {
+                await Api.post('/api/syllabus/teacher-slot-preferences/delete', [pref.id]);
+                allPreferences = allPreferences.filter(p => p.id !== pref.id);
+                renderPrefList();
+              } catch (err) { Toast.error(err.message); }
+            });
+            body.appendChild(row);
+          });
+        }
+
+        // Add form
+        const form = document.createElement('div');
+        form.className = 'sm-add-form';
+        const teacherOptions = teachers.length > 0
+          ? teachers.map(tc => `<option value="${tc.id}">Викладач #${tc.id}</option>`).join('')
+          : '<option value="" disabled>Немає викладачів</option>';
+        form.innerHTML = `
+          <div class="sm-add-form-field">
+            <span class="sm-add-form-label">Викладач</span>
+            <select class="sm-select" id="sp-teacher" style="min-width:150px;">${teacherOptions}</select>
+          </div>
+          <div class="sm-add-form-field">
+            <span class="sm-add-form-label">День</span>
+            <select class="sm-select" id="sp-weekday" style="min-width:100px;">
+              <option value="monday">Понеділок</option>
+              <option value="tuesday">Вівторок</option>
+              <option value="wednesday">Середа</option>
+              <option value="thursday">Четвер</option>
+              <option value="friday">П'ятниця</option>
+              <option value="saturday">Субота</option>
+            </select>
+          </div>
+          <div class="sm-add-form-field">
+            <span class="sm-add-form-label">Пара №</span>
+            <input type="number" class="sm-num-input" id="sp-lesson" value="1" min="1" max="8" style="width:64px;">
+          </div>
+          <button class="btn btn-primary btn-sm" id="sp-add-btn" style="align-self:flex-end;">Додати</button>`;
+        body.appendChild(form);
+
+        form.querySelector('#sp-add-btn').addEventListener('click', async () => {
+          const teacherId = Number(form.querySelector('#sp-teacher').value);
+          const weekday   = form.querySelector('#sp-weekday').value;
+          const lessonNum = Number(form.querySelector('#sp-lesson').value);
+          if (!teacherId) { Toast.warning('Оберіть викладача'); return; }
+          const addBtn = form.querySelector('#sp-add-btn');
+          addBtn.disabled = true;
+          try {
+            const created = await Api.post('/api/syllabus/teacher-slot-preferences', [{
+              academic_year_id: Number(yearId),
+              teacher_id: teacherId,
+              weekday,
+              lesson_number: lessonNum,
+              slot_type: slotType,
+            }]);
+            if (created && created[0]) allPreferences.push(created[0]);
+            renderPrefList();
+          } catch (err) {
+            Toast.error(err.message);
+            addBtn.disabled = false;
+          }
+        });
+      };
+
+      renderPrefList();
+    };
+
+    renderMainView();
+
+    // Footer
+    const statusDot  = document.createElement('span');
+    statusDot.className = 'sm-status-dot';
+    const statusText = document.createElement('span');
+    statusText.textContent = 'Є незбережені зміни';
+    const statusDiv  = document.createElement('div');
+    statusDiv.className = 'sm-modal-status';
+    statusDiv.append(statusDot, statusText);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-secondary';
+    cancelBtn.textContent = t('actions.cancel');
+    cancelBtn.addEventListener('click', closeModal);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-primary';
+    saveBtn.innerHTML = `<svg class="icon"><use href="#icon-save"/></svg> ${t('actions.save')}`;
+
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display:flex;gap:8px;';
+    actions.append(cancelBtn, saveBtn);
+    footEl.append(statusDiv, actions);
+
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      try {
+        // Save lab room changes
+        const toDelete = [...originalLabKeys]
+          .filter(k => !labRoomMap.has(k))
+          .map(k => allLabRooms.find(lr => `${lr.cycle_committee_id}_${lr.room_id}` === k)?.id)
+          .filter(Boolean);
+        const toCreate = [...labRoomMap.values()].filter(lr => lr.id === 0);
+        if (toDelete.length > 0) await Api.post('/api/syllabus/cycle-committee-lab-rooms/delete', toDelete);
+        if (toCreate.length > 0) {
+          const created = await Api.post('/api/syllabus/cycle-committee-lab-rooms', toCreate);
+          if (created) {
+            created.forEach(lr => {
+              const k = `${lr.cycle_committee_id}_${lr.room_id}`;
+              labRoomMap.set(k, lr);
+              originalLabKeys.add(k);
+            });
+          }
+        }
+
+        // Save restriction
+        const payload = {
+          ...restriction,
+          academic_year_id: Number(yearId),
+          min_group_lessons_per_day: Number(mainView.querySelector('#smr-min-group-day').value),
+          max_group_lessons_per_day: Number(mainView.querySelector('#smr-max-group-day').value),
+          max_teacher_lessons_per_day: Number(mainView.querySelector('#smr-max-teacher-day').value),
+          max_consecutive_teacher_lessons: Number(mainView.querySelector('#smr-consecutive').value),
+          no_gaps_in_group_schedule: mainView.querySelector('#smr-no-gaps').value === 'true',
+          time_priority: mainView.querySelector('#smr-time-priority').value,
+          allow_flow_lessons: mainView.querySelector('#smr-flow-toggle').classList.contains('on'),
+        };
+        if (restriction.id && restriction.id > 0) {
+          await Api.put('/api/syllabus/schedule-restrictions', [payload]);
+        } else {
+          const created = await Api.post('/api/syllabus/schedule-restrictions', [payload]);
+          if (created && created[0]) restriction.id = created[0].id;
+        }
+        delete this.cache['schedule-restrictions'];
+        Toast.success(t('messages.saved'));
+        statusDot.classList.add('saved');
+        statusText.textContent = 'Усі зміни збережено';
+      } catch (e) {
+        Toast.error(e.message);
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  },
+
+  async _doGenerate(semId, mainEl) {
     this.currentMgr = null;
     mainEl.innerHTML = `<div class="generate-progress"><div class="spinner"></div><span>${t('generate.generating')}</span></div>`;
     try {
       const data = await Api.post('/api/syllabus/schedule-templates/generate', {
         semester_id: Number(semId),
-        group_ids: groupIds.length > 0 ? groupIds : undefined,
       });
       mainEl.innerHTML = '';
 
@@ -1021,14 +1761,14 @@ const App = {
 
       container.innerHTML = `
         <div class="gmd-wrap">
-          <div class="gmd-toolbar">
-            <select id="gmd-spec">
-              <option value="">— ${t('fields.specialty')} —</option>
-              ${specialties.map(s=>`<option value="${s.id}"${filterSpec===String(s.id)?' selected':''}>${s.name}</option>`).join('')}
-            </select>
-            <button class="btn btn-primary btn-sm" id="gmd-add">
-              <svg class="icon icon-sm"><use href="#icon-plus"/></svg>${t('actions.add')}
-            </button>
+          <div class="filter-bar">
+            <div class="filter-field">
+              <label>${t('fields.specialty')}</label>
+              <select id="gmd-spec">
+                <option value="">—</option>
+                ${specialties.map(s=>`<option value="${s.id}"${filterSpec===String(s.id)?' selected':''}>${s.name}</option>`).join('')}
+              </select>
+            </div>
           </div>
 
           <div class="gmd-layout">
@@ -1087,6 +1827,11 @@ const App = {
                 </div>
               ` : `<div class="gmd-empty">${t('messages.noData')}</div>`}
             </div>
+          </div>
+          <div class="gmd-footer">
+            <button class="btn btn-primary btn-sm" id="gmd-add">
+              <svg class="icon icon-sm"><use href="#icon-plus"/></svg>${t('actions.add')}
+            </button>
           </div>
         </div>`;
 
@@ -1286,11 +2031,6 @@ const App = {
 
       container.innerHTML = `
         <div class="gmd-wrap">
-          <div class="gmd-toolbar">
-            <button class="btn btn-primary btn-sm" id="wmd-add">
-              <svg class="icon icon-sm"><use href="#icon-plus"/></svg>${t('actions.add')}
-            </button>
-          </div>
           <div class="gmd-layout">
             <div class="gmd-list-panel">
               <div class="gmd-list-hdr">${t('entities.workloadDistributions')} (${distributions.length})</div>
@@ -1346,6 +2086,11 @@ const App = {
                 </div>
               ` : `<div class="gmd-empty">${t('messages.noData')}</div>`}
             </div>
+          </div>
+          <div class="gmd-footer">
+            <button class="btn btn-primary btn-sm" id="wmd-add">
+              <svg class="icon icon-sm"><use href="#icon-plus"/></svg>${t('actions.add')}
+            </button>
           </div>
         </div>`;
 
@@ -1407,10 +2152,22 @@ const App = {
     };
 
     redraw();
+
+    // Check for pending transfer data from study plans
+    if (this._pendingWorkload) {
+      const pending = this._pendingWorkload;
+      this._pendingWorkload = null;
+      this._openWorkloadDistModal(pending, studyPlans, groups, specialties, disciplines, async (saved) => {
+        const created = await Api.post(ENTITY_CONFIGS['workload-distributions'].apiPath, [saved]);
+        distributions = distributions.concat(created || []);
+        if (created?.[0]) selectedId = created[0].id;
+        redraw();
+      });
+    }
   },
 
   _openWorkloadDistModal(dist, studyPlans, groups, specialties, disciplines, onSave) {
-    const isEdit = !!dist;
+    const isEdit = !!(dist && dist.id);
     const body = document.createElement('div');
     const studyPlanLabel = (p) => {
       const disc = disciplines.find(x => x.id === p.discipline_id);
@@ -1531,26 +2288,21 @@ const App = {
       </div>`;
     const foot = document.createElement('div');
     foot.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">${t('actions.cancel')}</button>
-      <button class="btn btn-primary" id="transfer-save">${t('actions.save')}</button>`;
+      <button class="btn btn-primary" id="transfer-go">${t('workload.transfer')}</button>`;
     openModal(t('workload.transfer'), body, foot);
-    foot.querySelector('#transfer-save').addEventListener('click', async () => {
+    foot.querySelector('#transfer-go').addEventListener('click', () => {
       const groupId = document.getElementById('transfer-group').value;
       if (!groupId) { Toast.warning(t('messages.fillRequired')); return; }
-      const payload = [{
+      this._pendingWorkload = {
         study_plan_id:  studyPlan.id,
         group_id:       Number(groupId),
         classroom_work: studyPlan.lectures   || null,
         laboratory:     studyPlan.laboratory || null,
         practical:      studyPlan.practical  || null,
         exam:           studyPlan.exam       || null,
-      }];
-      try {
-        foot.querySelector('#transfer-save').disabled = true;
-        await Api.post(ENTITY_CONFIGS['workload-distributions'].apiPath, payload);
-        closeModal();
-        Toast.success(t('messages.saved'));
-        location.hash = '#/processing/workload-distributions';
-      } catch(e) { Toast.error(e.message); foot.querySelector('#transfer-save').disabled = false; }
+      };
+      closeModal();
+      location.hash = '#/processing/workload-distributions';
     });
   },
 
@@ -1565,111 +2317,23 @@ const App = {
     this.currentMgr = null;
 
     main.innerHTML = `
-      <div class="page-header">
-        <h1>${t('pages.usersTitle')}</h1>
-        <button class="btn btn-primary" id="add-user-btn">
-          <svg class="icon icon-sm"><use href="#icon-plus"/></svg>
-          ${t('users.register')}
-        </button>
-      </div>
-      <div class="loading-state"><div class="spinner"></div></div>`;
+      <div class="page-header"><h1>${t('pages.usersTitle')}</h1></div>
+      <div id="users-content"></div>`;
 
-    main.querySelector('#add-user-btn').addEventListener('click', () => this._openRegisterModal());
+    // Invalidate users cache so EntityManager loads fresh data
+    delete this.cache['users'];
+    await this.renderEntityTab('users', main.querySelector('#users-content'));
 
-    let users = [];
-    try {
-      users = await Api.get('/api/auth/users') || [];
-    } catch (e) {
-      main.querySelector('.loading-state').outerHTML = `<div class="alert alert-error">${e.message}</div>`;
-      return;
+    // Inject Register button into EntityManager toolbar alongside delete
+    const toolbarLeft = main.querySelector('#users-content .toolbar-left');
+    if (toolbarLeft) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary btn-sm';
+      btn.id = 'add-user-btn';
+      btn.innerHTML = `<svg class="icon icon-sm"><use href="#icon-plus"/></svg> ${t('users.register')}`;
+      btn.addEventListener('click', () => this._openRegisterModal());
+      toolbarLeft.appendChild(btn);
     }
-
-    const wrap = document.createElement('div');
-    wrap.className = 'table-wrapper';
-    main.querySelector('.loading-state')?.replaceWith(wrap);
-    this._renderUsersTable(users, wrap);
-  },
-
-  _renderUsersTable(users, wrap) {
-    if (!users.length) {
-      wrap.innerHTML = `<div class="empty-state">—</div>`;
-      return;
-    }
-    wrap.innerHTML = `
-      <table class="entity-table">
-        <thead>
-          <tr>
-            <th>${t('fields.email')}</th>
-            <th>${t('fields.name')}</th>
-            <th>${t('fields.role')}</th>
-            <th>${t('fields.isActive')}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${users.map(u => {
-            const name = (`${u.first_name || ''} ${u.last_name || ''}`).trim() || `(${t('users.noName')})`;
-            const roleBadge = `<span class="badge badge-${u.role==='admin'?'warning':'info'}">${t('roles.'+u.role)}</span>`;
-            const statusBadge = u.is_active
-              ? `<span class="badge badge-success">${t('status.active')}</span>`
-              : `<span class="badge badge-neutral" style="opacity:.7">${t('users.pendingStatus')}</span>`;
-            return `<tr data-uid="${u.id}">
-              <td>${u.email}</td>
-              <td>${name}</td>
-              <td>${roleBadge}</td>
-              <td>${statusBadge}</td>
-              <td class="col-actions" style="width:auto;white-space:nowrap">
-                ${!u.is_active ? `<button class="btn btn-sm btn-secondary" data-copy-invite="${u.id}" title="${t('users.inviteLink')}">
-                  <svg class="icon icon-sm"><use href="#icon-refresh"/></svg>
-                </button>` : ''}
-                <button class="btn btn-sm btn-${u.is_active ? 'secondary' : 'primary'}" data-id="${u.id}" data-active="${u.is_active}">
-                  ${u.is_active ? t('actions.deactivate') : t('actions.activate')}
-                </button>
-                <button class="btn btn-sm btn-danger" data-delete="${u.id}">
-                  <svg class="icon icon-sm"><use href="#icon-trash"/></svg>
-                </button>
-              </td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>`;
-
-    wrap.querySelectorAll('[data-copy-invite]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.copyInvite;
-        try {
-          const resp = await Api.post(`/api/auth/users/${id}/reset-invite`, null);
-          const link = window.location.origin + (resp?.invite_link || '');
-          navigator.clipboard.writeText(link).then(() => Toast.info(t('messages.copied')));
-        } catch(e) { Toast.error(e.message); }
-      });
-    });
-
-    wrap.querySelectorAll('[data-id]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id     = btn.dataset.id;
-        const active = btn.dataset.active === 'true';
-        try {
-          await Api.post(`/api/auth/users/${id}/${active ? 'deactivate' : 'activate'}`, null);
-          Toast.success(t('messages.saved'));
-          const updated = await Api.get('/api/auth/users');
-          this._renderUsersTable(updated || [], wrap);
-        } catch (e) { Toast.error(e.message); }
-      });
-    });
-
-    wrap.querySelectorAll('[data-delete]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = Number(btn.dataset.delete);
-        if (!await confirmDialog(t('messages.confirmDelete'))) return;
-        try {
-          await Api.post('/api/auth/users/delete', [id]);
-          Toast.success(t('messages.deleted'));
-          const updated = await Api.get('/api/auth/users');
-          this._renderUsersTable(updated || [], wrap);
-        } catch (e) { Toast.error(e.message); }
-      });
-    });
   },
 
   _openRegisterModal() {
@@ -1733,9 +2397,21 @@ const App = {
         foot.querySelector('#reg-save').style.display = 'none';
 
         Toast.success(t('messages.saved'));
-        const updated = await Api.get('/api/auth/users');
-        const wrap = document.querySelector('.table-wrapper');
-        if (wrap) this._renderUsersTable(updated || [], wrap);
+        // Reload the users entity tab after registration
+        const usersContent = document.querySelector('#users-content');
+        if (usersContent) {
+          delete this.cache['users'];
+          await this.renderEntityTab('users', usersContent);
+          const tl = usersContent.querySelector('.toolbar-left');
+          if (tl && !tl.querySelector('#add-user-btn')) {
+            const rb = document.createElement('button');
+            rb.className = 'btn btn-primary btn-sm';
+            rb.id = 'add-user-btn';
+            rb.innerHTML = `<svg class="icon icon-sm"><use href="#icon-plus"/></svg> ${t('users.register')}`;
+            rb.addEventListener('click', () => this._openRegisterModal());
+            tl.appendChild(rb);
+          }
+        }
       } catch (e) {
         Toast.error(e.message);
       }

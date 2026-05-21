@@ -41,6 +41,8 @@ func NewGenerateScheduleTemplateHandler(svc service.ScheduleTemplateSvc) gin.Han
 			switch {
 			case errors.Is(err, generator.ErrTimeout):
 				rest.RespondError(c, http.StatusGatewayTimeout, err)
+			case errors.Is(err, generator.ErrSemesterNotFound):
+				rest.RespondError(c, http.StatusNotFound, err)
 			case errors.Is(err, generator.ErrNoSettings),
 				errors.Is(err, generator.ErrNoBellSchedule),
 				errors.Is(err, generator.ErrNoGroupSemesters),

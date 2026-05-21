@@ -33,6 +33,8 @@ const (
 	ObjectTypeScheduleTemplateSetting = "schedule_template_setting"
 	ObjectTypeScheduleTemplate        = "schedule_template"
 	ObjectTypeScheduleRestriction     = "schedule_restriction"
+	ObjectTypeTeacherSlotPreference   = "teacher_slot_preference"
+	ObjectTypeCycleCommitteeLabRoom   = "cycle_committee_lab_room"
 )
 
 type Massage struct {

@@ -114,20 +114,12 @@
     </div>
 
     <div class="header-right">
-      <!-- Semester context selector (academic year is auto-selected) -->
+      <!-- User email display; selectors kept hidden for JS state management -->
       <div class="header-context" id="header-context">
-        <div class="header-context-group" style="display:none">
-          <label for="year-select" class="header-context-label" data-i18n="header.academicYear"></label>
-          <select id="year-select" class="header-select">
-            <option value="" data-i18n="header.selectYear"></option>
-          </select>
-        </div>
-        <div class="header-context-sep" style="display:none"></div>
-        <div class="header-context-group">
-          <label for="semester-select" class="header-context-label" data-i18n="header.semester"></label>
-          <select id="semester-select" class="header-select">
-            <option value="" data-i18n="header.selectSemester"></option>
-          </select>
+        <span id="header-email" class="header-email"></span>
+        <div style="display:none">
+          <select id="year-select"><option value=""></option></select>
+          <select id="semester-select"><option value=""></option></select>
         </div>
       </div>
 

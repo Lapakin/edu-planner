@@ -24,18 +24,26 @@ func (r ScheduleRestrictionRepository) CreateScheduleRestrictions(ctx context.Co
 	builder := q.Insert(ctx).
 		Into("schedule_restriction").
 		Columns(`
+			academic_year_id,
 			min_group_lessons_per_day,
 			max_group_lessons_per_day,
 			max_teacher_lessons_per_day,
+			max_consecutive_teacher_lessons,
+			time_priority,
+			allow_flow_lessons,
 			no_gaps_in_group_schedule,
 			created_at
 		`)
 
 	for _, res := range restrictions {
 		builder = builder.Values(
+			res.AcademicYearID,
 			res.MinGroupLessonsPerDay,
 			res.MaxGroupLessonsPerDay,
 			res.MaxTeacherLessonsPerDay,
+			res.MaxConsecutiveTeacherLessons,
+			res.TimePriority,
+			res.AllowFlowLessons,
 			res.NoGapsInGroupSchedule,
 			res.CreatedAt,
 		)
@@ -57,9 +65,13 @@ func (r ScheduleRestrictionRepository) GetScheduleRestrictionByID(ctx context.Co
 	query, args, err := q.Select(ctx).
 		Columns(`
 			id,
+			academic_year_id,
 			min_group_lessons_per_day,
 			max_group_lessons_per_day,
 			max_teacher_lessons_per_day,
+			max_consecutive_teacher_lessons,
+			time_priority,
+			allow_flow_lessons,
 			no_gaps_in_group_schedule,
 			created_at,
 			modified_at
@@ -83,9 +95,13 @@ func (r ScheduleRestrictionRepository) FetchScheduleRestrictions(ctx context.Con
 	query, args, err := q.Select(ctx).
 		Columns(`
 			id,
+			academic_year_id,
 			min_group_lessons_per_day,
 			max_group_lessons_per_day,
 			max_teacher_lessons_per_day,
+			max_consecutive_teacher_lessons,
+			time_priority,
+			allow_flow_lessons,
 			no_gaps_in_group_schedule,
 			created_at,
 			modified_at
@@ -96,6 +112,7 @@ func (r ScheduleRestrictionRepository) FetchScheduleRestrictions(ctx context.Con
 				Operator: q.And,
 				Conditions: q.Conditions{
 					{Name: domain.IDsParam, Column: "id", Operator: q.Equals},
+					{Name: domain.AcademicYearIDParam, Column: "academic_year_id", Operator: q.Equals},
 				},
 			},
 		}).
@@ -119,19 +136,27 @@ func (r ScheduleRestrictionRepository) UpdateScheduleRestrictions(ctx context.Co
 		NumberOfRows(len(restrictions)).
 		PrimaryKey("id").
 		AddBigintColumn("id").
+		AddBigintColumn("academic_year_id").
 		AddIntColumn("min_group_lessons_per_day").
 		AddIntColumn("max_group_lessons_per_day").
 		AddIntColumn("max_teacher_lessons_per_day").
+		AddIntColumn("max_consecutive_teacher_lessons").
+		AddVarCharColumn("time_priority").
+		AddBoolColumn("allow_flow_lessons").
 		AddBoolColumn("no_gaps_in_group_schedule").
 		AddTimeStampColumn("modified_at")
 
-	args := make([]any, 0, 6*len(restrictions))
+	args := make([]any, 0, 10*len(restrictions))
 	for _, res := range restrictions {
 		args = append(args,
 			res.ID,
+			res.AcademicYearID,
 			res.MinGroupLessonsPerDay,
 			res.MaxGroupLessonsPerDay,
 			res.MaxTeacherLessonsPerDay,
+			res.MaxConsecutiveTeacherLessons,
+			string(res.TimePriority),
+			res.AllowFlowLessons,
 			res.NoGapsInGroupSchedule,
 			res.ModifiedAt,
 		)

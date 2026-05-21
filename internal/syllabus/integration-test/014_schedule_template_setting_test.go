@@ -30,6 +30,7 @@ func TestFetchScheduleTemplateSettings(t *testing.T) {
 	ta.NewHTTPCasesRunner("/api/v1/schedule-template-settings", http.MethodGet, adminToken).
 		NewOKRequestWithoutBody(nil, nil, ta.ScheduleTemplateSettingsArray).
 		NewOKRequestWithoutBody(map[string]any{domain.IDsParam: []uint64{ta.ScheduleTemplateSetting1.ID}}, nil, domain.ScheduleTemplateSettings{ta.ScheduleTemplateSetting1}).
+		NewOKRequestWithoutBody(map[string]any{domain.AcademicYearIDParam: ta.AcademicYear1.ID}, nil, ta.ScheduleTemplateSettingsArray).
 		Run(t, ts.URL, ta.DefaultIgnoredFields)
 }
 
@@ -40,10 +41,14 @@ func TestUpdateScheduleTemplateSettings(t *testing.T) {
 				var modified domain.ScheduleTemplateSettings
 				utils.Copy(input, &modified)
 				modified[0].MaxStudyHoursPerDay = 9
+				modified[0].StudyDaysMask = domain.StudyDayMon | domain.StudyDayTue | domain.StudyDayWed | domain.StudyDayThu | domain.StudyDayFri
 				return modified
 			}, http.StatusOK, ta.ScheduleTemplateSettingsArray,
 		).
-		NewRequestWithBody("NotFound", domain.ScheduleTemplateSettings{&domain.ScheduleTemplateSetting{ID: 0, HoursPerLesson: 1.5, MaxIdenticalLessonsPerDay: 2, MaxStudyHoursPerDay: 8, MaxTeacherHoursPerWeek: 36}}, http.StatusNotFound, ta.ExpectedResponseNotFound).
+		NewRequestWithBody("NotFound", domain.ScheduleTemplateSettings{&domain.ScheduleTemplateSetting{
+			ID: 0, LessonsPerClass: 2, StudyDaysMask: domain.StudyDaysMaskDefault,
+			MaxIdenticalLessonsPerDay: 2, MaxStudyHoursPerDay: 8, MaxTeacherHoursPerWeek: 36,
+		}}, http.StatusNotFound, ta.ExpectedResponseNotFound).
 		NewBadJWTRequest().
 		NewUnmarshalErrorRequest().
 		NewNilBodyRequest().
