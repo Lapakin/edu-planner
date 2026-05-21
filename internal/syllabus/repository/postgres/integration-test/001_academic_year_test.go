@@ -105,6 +105,28 @@ func TestFetchAcademicYears(t *testing.T) {
 	}
 }
 
+func TestDeactivateAllAcademicYears(t *testing.T) {
+	repo := postgres.NewAcademicYearRepository(db)
+	ctx := context.Background()
+
+	testCases := []struct {
+		name          string
+		expectedError error
+	}{
+		{
+			name:          "OK",
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := repo.DeactivateAllAcademicYears(ctx, ta.CurrentTime)
+			assert.Equal(t, tc.expectedError, err)
+		})
+	}
+}
+
 func TestActivateAcademicYear(t *testing.T) {
 	repo := postgres.NewAcademicYearRepository(db)
 	ctx := context.Background()
@@ -175,35 +197,6 @@ func TestUpdateAcademicYears(t *testing.T) {
 				input = tc.dataManipulation(tc.input)
 			}
 			err := repo.UpdateAcademicYears(ctx, input)
-			assert.Equal(t, tc.expectedError, err)
-		})
-	}
-}
-
-func TestDeactivateAcademicYear(t *testing.T) {
-	repo := postgres.NewAcademicYearRepository(db)
-	ctx := context.Background()
-
-	testCases := []struct {
-		name          string
-		input         uint64
-		expectedError error
-	}{
-		{
-			name:          "OK",
-			input:         ta.AcademicYear1.ID,
-			expectedError: nil,
-		},
-		{
-			name:          "NotFound",
-			input:         0,
-			expectedError: sql.ErrNoRows,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := repo.DeactivateAcademicYear(ctx, tc.input, ta.CurrentTime)
 			assert.Equal(t, tc.expectedError, err)
 		})
 	}

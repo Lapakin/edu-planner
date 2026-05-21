@@ -209,7 +209,14 @@ func (s *AcademicYearService) ActivateAcademicYear(ctx context.Context, claims *
 	}
 	defer tx.Rollback()
 
-	if err = s.rm.NewAcademicYearRepo(tx).ActivateAcademicYear(ctx, academicYearID, time.Now()); err != nil {
+	currentTime := time.Now()
+
+	r := s.rm.NewAcademicYearRepo(tx)
+	if err = r.DeactivateAllAcademicYears(ctx, currentTime); err != nil {
+		return handleDBError(err)
+	}
+
+	if err = s.rm.NewAcademicYearRepo(tx).ActivateAcademicYear(ctx, academicYearID, currentTime); err != nil {
 		return handleDBError(err)
 	}
 
@@ -222,50 +229,6 @@ func (s *AcademicYearService) ActivateAcademicYear(ctx context.Context, claims *
 	massage := &domain.Massage{
 		EventID:    uuid.New().String(),
 		ActionType: domain.ActionTypeActivate,
-		ObjectType: domain.ObjectTypeAcademicYear,
-		Object:     objBytes,
-		Claims:     claims,
-	}
-
-	if err = s.rm.NewMessageRepo(tx).Write(ctx, domain.Massages{massage}); err != nil {
-		return handleDBError(err)
-	}
-
-	if err = tx.Commit(); err != nil {
-		return ErrInternal
-	}
-
-	return nil
-}
-
-func (s *AcademicYearService) DeactivateAcademicYear(ctx context.Context, claims *jwt.Claims, academicYearID uint64) error {
-	var err error
-	defer func() {
-		if err != nil {
-			s.l.Errorf("error during deactivating academic year. err: %v", err)
-			s.l.Debugf("claims: %v, academicYearID: %v", claims, academicYearID)
-		}
-	}()
-
-	tx, err := s.db.Begintx(ctx)
-	if err != nil {
-		return ErrInternal
-	}
-	defer tx.Rollback()
-
-	if err = s.rm.NewAcademicYearRepo(tx).DeactivateAcademicYear(ctx, academicYearID, time.Now()); err != nil {
-		return handleDBError(err)
-	}
-
-	var objBytes json.RawMessage
-	objBytes, err = json.Marshal(academicYearID)
-	if err != nil {
-		return ErrInternal
-	}
-
-	massage := &domain.Massage{
-		EventID:    uuid.New().String(),
-		ActionType: domain.ActionTypeDeactivate,
 		ObjectType: domain.ObjectTypeAcademicYear,
 		Object:     objBytes,
 		Claims:     claims,

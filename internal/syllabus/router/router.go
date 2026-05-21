@@ -20,9 +20,7 @@ func NewRouter(svc *service.Services) *gin.Engine {
 	apiV1.Handle(http.MethodGet, "/academic-years", handler.NewFetchAcademicYearsHandler(svc.AcademicYearSvc))
 	apiV1.Handle(http.MethodPut, "/academic-years", handler.NewUpdateAcademicYearsHandler(svc.AcademicYearSvc))
 	apiV1.Handle(http.MethodPost, "/academic-years/delete", handler.NewDeleteAcademicYearByIDsHandler(svc.AcademicYearSvc))
-
 	apiV1.Handle(http.MethodPost, "/academic-years/:academicYearId/activate", handler.NewActivateAcademicYearByIDHandler(svc.AcademicYearSvc))
-	apiV1.Handle(http.MethodPost, "/academic-years/:academicYearId/deactivate", handler.NewDeactivateAcademicYearByIDHandler(svc.AcademicYearSvc))
 
 	apiV1.Handle(http.MethodGet, "/semesters/:semesterId", handler.NewGetSemesterByIDHandler(svc.SemesterSvc))
 	apiV1.Handle(http.MethodPost, "/semesters", handler.NewCreateSemestersHandler(svc.SemesterSvc))

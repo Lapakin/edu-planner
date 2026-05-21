@@ -349,18 +349,18 @@ func (mr *MockAcademicYearRepositoryMockRecorder) CreateAcademicYear(ctx, academ
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAcademicYear", reflect.TypeOf((*MockAcademicYearRepository)(nil).CreateAcademicYear), ctx, academicYears)
 }
 
-// DeactivateAcademicYear mocks base method.
-func (m *MockAcademicYearRepository) DeactivateAcademicYear(ctx context.Context, id uint64, currentTime time.Time) error {
+// DeactivateAllAcademicYears mocks base method.
+func (m *MockAcademicYearRepository) DeactivateAllAcademicYears(ctx context.Context, currentTime time.Time) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeactivateAcademicYear", ctx, id, currentTime)
+	ret := m.ctrl.Call(m, "DeactivateAllAcademicYears", ctx, currentTime)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeactivateAcademicYear indicates an expected call of DeactivateAcademicYear.
-func (mr *MockAcademicYearRepositoryMockRecorder) DeactivateAcademicYear(ctx, id, currentTime any) *gomock.Call {
+// DeactivateAllAcademicYears indicates an expected call of DeactivateAllAcademicYears.
+func (mr *MockAcademicYearRepositoryMockRecorder) DeactivateAllAcademicYears(ctx, currentTime any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateAcademicYear", reflect.TypeOf((*MockAcademicYearRepository)(nil).DeactivateAcademicYear), ctx, id, currentTime)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateAllAcademicYears", reflect.TypeOf((*MockAcademicYearRepository)(nil).DeactivateAllAcademicYears), ctx, currentTime)
 }
 
 // DeleteAcademicYears mocks base method.

@@ -36,7 +36,6 @@ type AcademicYearSvc interface {
 	UpdateAcademicYears(ctx context.Context, claims *jwt.Claims, academicYears domain.AcademicYears) error
 	DeleteAcademicYears(ctx context.Context, claims *jwt.Claims, ids []uint64) error
 	ActivateAcademicYear(ctx context.Context, claims *jwt.Claims, id uint64) error
-	DeactivateAcademicYear(ctx context.Context, claims *jwt.Claims, id uint64) error
 }
 
 type SemesterSvc interface {
