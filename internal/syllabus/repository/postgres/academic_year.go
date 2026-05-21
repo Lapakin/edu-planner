@@ -82,6 +82,34 @@ func (r *AcademicYearRepository) GetAcademicYearByID(ctx context.Context, id uin
 	return academicYear, nil
 }
 
+func (r *AcademicYearRepository) GetActiveAcademicYear(ctx context.Context) (*domain.AcademicYear, error) {
+	query, args, err := q.Select(ctx).
+		Columns(`
+			id,
+			name,
+			start_date,
+			end_date,
+			is_active,
+			is_deleted,
+			created_at,
+			modified_at
+		`).
+		From("academic_year").
+		IsActive().
+		IsDeleted(false).
+		ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	academicYear := &domain.AcademicYear{}
+	if err = sqlx.GetContext(ctx, r.db, academicYear, query, args...); err != nil {
+		return nil, err
+	}
+
+	return academicYear, nil
+}
+
 func (r *AcademicYearRepository) FetchAcademicYears(ctx context.Context, filters f.Filters) (domain.AcademicYears, error) {
 	query, args, err := q.Select(ctx).
 		Columns(`

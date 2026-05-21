@@ -10,9 +10,17 @@ import (
 )
 
 type Config struct {
-	QueueName string `yaml:"queue_name"`
-	Endpoint  string `yaml:"endpoint"`
-	Region    string `yaml:"region"`
+	QueueName         string `yaml:"queue_name"`
+	ConsumerQueueName string `yaml:"consumer_queue_name"`
+	Endpoint          string `yaml:"endpoint"`
+	Region            string `yaml:"region"`
+}
+
+func (c *Config) GetConsumerQueueName() string {
+	if c.ConsumerQueueName != "" {
+		return c.ConsumerQueueName
+	}
+	return c.QueueName
 }
 
 func (c *Config) LoadAWSConfig(ctx context.Context) (aws.Config, error) {

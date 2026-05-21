@@ -207,3 +207,36 @@ func TestDeleteTeachers(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTeacherByUserID(t *testing.T) {
+	repo := postgres.NewTeacherRepository(db)
+	ctx := context.Background()
+
+	testCases := []struct {
+		name           string
+		input          uint64
+		expectedOutput *domain.Teacher
+		expectedError  error
+	}{
+		{
+			name:           "OK",
+			input:          ta.User1.ID,
+			expectedOutput: ta.Teacher1,
+			expectedError:  nil,
+		},
+		{
+			name:           "NotFound",
+			input:          0,
+			expectedOutput: nil,
+			expectedError:  sql.ErrNoRows,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := repo.GetTeacherByUserID(ctx, tc.input)
+			assert.Equal(t, tc.expectedOutput, output)
+			assert.Equal(t, tc.expectedError, err)
+		})
+	}
+}

@@ -17,6 +17,7 @@ jwt:
 
 sqs:
   queue_name: "syllabus-message-queue"
+  consumer_queue_name: "user-management-queue"
   endpoint: "http://localstack:4566"
   region: "us-east-1"
 

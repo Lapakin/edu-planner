@@ -62,6 +62,10 @@ func main() {
 
 	svc := service.NewServices(db, postgres.NewRepoManager(), logger)
 
+	if err = svc.StartMassageConsumer(context.Background(), logger, cfg.SQS); err != nil {
+		logger.Fatalf("Failed to start SQS consumer: %v", err)
+	}
+
 	r := router.NewRouter(svc)
 
 	logger.Infof("Starting server at %s", cfg.Addr)

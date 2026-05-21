@@ -35,6 +35,7 @@ type RepoManager interface {
 type AcademicYearRepository interface {
 	CreateAcademicYear(ctx context.Context, academicYears domain.AcademicYears) error
 	GetAcademicYearByID(ctx context.Context, id uint64) (*domain.AcademicYear, error)
+	GetActiveAcademicYear(ctx context.Context) (*domain.AcademicYear, error)
 	FetchAcademicYears(ctx context.Context, filters f.Filters) (domain.AcademicYears, error)
 	UpdateAcademicYears(ctx context.Context, academicYears domain.AcademicYears) error
 	DeleteAcademicYears(ctx context.Context, ids []uint64) error
@@ -89,6 +90,7 @@ type CycleCommitteeRepository interface {
 type TeacherRepository interface {
 	CreateTeachers(ctx context.Context, teachers domain.Teachers) error
 	GetTeacherByID(ctx context.Context, id uint64) (*domain.Teacher, error)
+	GetTeacherByUserID(ctx context.Context, userID uint64) (*domain.Teacher, error)
 	FetchTeachers(ctx context.Context, filters f.Filters) (domain.Teachers, error)
 	UpdateTeachers(ctx context.Context, teachers domain.Teachers) error
 	DeleteTeachers(ctx context.Context, ids []uint64) error
