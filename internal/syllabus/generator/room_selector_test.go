@@ -5,7 +5,7 @@ import (
 )
 
 func TestRoomSelector_SelectRoom_SingleRoom(t *testing.T) {
-	rs := newRoomSelector([]uint64{101})
+	rs := newRoomSelector([]uint64{101}, nil)
 	used := make(map[uint64]bool)
 	roomID := rs.selectRoom(used)
 	if roomID != 101 {
@@ -14,7 +14,7 @@ func TestRoomSelector_SelectRoom_SingleRoom(t *testing.T) {
 }
 
 func TestRoomSelector_SelectRoom_EmptyRoomList(t *testing.T) {
-	rs := newRoomSelector([]uint64{})
+	rs := newRoomSelector([]uint64{}, nil)
 	used := make(map[uint64]bool)
 	roomID := rs.selectRoom(used)
 	if roomID != 0 {
@@ -23,7 +23,7 @@ func TestRoomSelector_SelectRoom_EmptyRoomList(t *testing.T) {
 }
 
 func TestRoomSelector_SelectRoom_BalancesUsage(t *testing.T) {
-	rs := newRoomSelector([]uint64{101, 102})
+	rs := newRoomSelector([]uint64{101, 102}, nil)
 	used := make(map[uint64]bool)
 
 	// First call — pick the least used (both at 0, so first one)
@@ -45,7 +45,7 @@ func TestRoomSelector_SelectRoom_BalancesUsage(t *testing.T) {
 }
 
 func TestRoomSelector_SelectRoom_SkipsAlreadyUsedInSlot(t *testing.T) {
-	rs := newRoomSelector([]uint64{101, 102})
+	rs := newRoomSelector([]uint64{101, 102}, nil)
 
 	// Mark 101 as used in this slot
 	used := map[uint64]bool{101: true}
@@ -56,7 +56,7 @@ func TestRoomSelector_SelectRoom_SkipsAlreadyUsedInSlot(t *testing.T) {
 }
 
 func TestRoomSelector_SelectRoom_AllRoomsUsedInSlot_FallsBack(t *testing.T) {
-	rs := newRoomSelector([]uint64{101, 102})
+	rs := newRoomSelector([]uint64{101, 102}, nil)
 
 	// All rooms used in this slot — should still return a room (least used)
 	used := map[uint64]bool{101: true, 102: true}
@@ -67,7 +67,7 @@ func TestRoomSelector_SelectRoom_AllRoomsUsedInSlot_FallsBack(t *testing.T) {
 }
 
 func TestRoomSelector_AssignRooms_SetsNonZeroRoomIDs(t *testing.T) {
-	rs := newRoomSelector([]uint64{101, 102})
+	rs := newRoomSelector([]uint64{101, 102}, nil)
 	sched := newSchedule()
 	d := date{year: 2024, month: 9, day: 2}
 
@@ -88,7 +88,7 @@ func TestRoomSelector_AssignRooms_SetsNonZeroRoomIDs(t *testing.T) {
 }
 
 func TestRoomSelector_AssignRooms_PreservesExistingRoomIDs(t *testing.T) {
-	rs := newRoomSelector([]uint64{101, 102})
+	rs := newRoomSelector([]uint64{101, 102}, nil)
 	sched := newSchedule()
 	d := date{year: 2024, month: 9, day: 2}
 
@@ -110,14 +110,14 @@ func TestRoomSelector_AssignRooms_PreservesExistingRoomIDs(t *testing.T) {
 }
 
 func TestRoomSelector_AssignRooms_EmptySchedule(_ *testing.T) {
-	rs := newRoomSelector([]uint64{101})
+	rs := newRoomSelector([]uint64{101}, nil)
 	sched := newSchedule()
 	// Should not panic on empty schedule
 	rs.assignRooms(sched)
 }
 
 func TestRoomSelector_AssignRooms_MultipleLessons(t *testing.T) {
-	rs := newRoomSelector([]uint64{101, 102})
+	rs := newRoomSelector([]uint64{101, 102}, nil)
 	sched := newSchedule()
 	d := date{year: 2024, month: 9, day: 2}
 

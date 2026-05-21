@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -49,22 +50,49 @@ func (s *ScheduleTemplateService) GenerateScheduleTemplate(ctx context.Context, 
 	}
 	defer tx.Rollback()
 
-	// 1. Fetch schedule template settings (use the latest)
-	allSettings, err := s.rm.NewScheduleTemplateSettingRepo(tx).FetchScheduleTemplateSettings(ctx, make(f.Filters))
+	// 0. Fetch the semester to get its academic_year_id
+	semester, err := s.rm.NewSemesterRepo(tx).GetSemesterByID(ctx, req.SemesterID)
+	if err != nil {
+		if errors.Is(handleDBError(err), ErrNotFound) {
+			return nil, generator.ErrSemesterNotFound
+		}
+		return nil, ErrInternal
+	}
+	yearIDStr := strconv.FormatUint(semester.AcademicYearID, 10)
+
+	// 1. Fetch schedule template settings for this academic year (use the latest)
+	settingsFilters := f.Filters{domain.AcademicYearIDParam: yearIDStr}
+	allSettings, err := s.rm.NewScheduleTemplateSettingRepo(tx).FetchScheduleTemplateSettings(ctx, settingsFilters)
 	if err != nil || len(allSettings) == 0 {
 		return nil, fmt.Errorf("%w: %w", generator.ErrNoSettings, err)
 	}
 	templateSetting := allSettings[len(allSettings)-1]
 
-	// 1a. Fetch schedule restriction (use the latest; fall back to defaults if none configured)
+	// 1a. Fetch schedule restriction for this academic year (fall back to defaults if none configured)
 	var restriction *domain.ScheduleRestriction
-	allRestrictions, err := s.rm.NewScheduleRestrictionRepo(tx).FetchScheduleRestrictions(ctx, make(f.Filters))
+	restrictionFilters := f.Filters{domain.AcademicYearIDParam: yearIDStr}
+	allRestrictions, err := s.rm.NewScheduleRestrictionRepo(tx).FetchScheduleRestrictions(ctx, restrictionFilters)
 	if err == nil && len(allRestrictions) > 0 {
 		restriction = allRestrictions[len(allRestrictions)-1]
 	}
 
-	// 2. Fetch bell schedules
-	bellSchedules, err := s.rm.NewBellScheduleRepo(tx).FetchBellSchedules(ctx, make(f.Filters))
+	// 1b. Fetch teacher slot preferences for this academic year
+	prefFilters := f.Filters{domain.AcademicYearIDParam: yearIDStr}
+	teacherPreferences, prefErr := s.rm.NewTeacherSlotPreferenceRepo(tx).FetchTeacherSlotPreferences(ctx, prefFilters)
+	if prefErr != nil {
+		return nil, ErrInternal
+	}
+
+	// 1c. Fetch cycle committee lab rooms for this academic year
+	labRoomFilters := f.Filters{domain.AcademicYearIDParam: yearIDStr}
+	labRooms, labRoomErr := s.rm.NewCycleCommitteeLabRoomRepo(tx).FetchCycleCommitteeLabRooms(ctx, labRoomFilters)
+	if labRoomErr != nil {
+		return nil, ErrInternal
+	}
+
+	// 2. Fetch bell schedules for this academic year
+	bellFilters := f.Filters{domain.AcademicYearIDParam: yearIDStr}
+	bellSchedules, err := s.rm.NewBellScheduleRepo(tx).FetchBellSchedules(ctx, bellFilters)
 	if err != nil || len(bellSchedules) == 0 {
 		return nil, fmt.Errorf("%w: %w", generator.ErrNoBellSchedule, err)
 	}
@@ -87,20 +115,6 @@ func (s *ScheduleTemplateService) GenerateScheduleTemplate(ctx context.Context, 
 		if i == 0 || gs.EndDate.After(semesterEnd) {
 			semesterEnd = gs.EndDate
 		}
-	}
-
-	if len(req.GroupIDs) > 0 {
-		requestedSet := make(map[uint64]bool)
-		for _, id := range req.GroupIDs {
-			requestedSet[id] = true
-		}
-		filtered := make([]uint64, 0)
-		for _, id := range groupIDs {
-			if requestedSet[id] {
-				filtered = append(filtered, id)
-			}
-		}
-		groupIDs = filtered
 	}
 
 	if len(groupIDs) == 0 {
@@ -161,14 +175,20 @@ func (s *ScheduleTemplateService) GenerateScheduleTemplate(ctx context.Context, 
 		roomIDs = append(roomIDs, r.ID)
 	}
 
-	// 10. Build workloads
-	workloads := generator.BuildWorkloads(relevantDistributions, relevantAssignments, studyPlans, groups)
+	// 10. Fetch disciplines (needed for cycle committee lookup in workload building)
+	disciplines, err := s.rm.NewDisciplineRepo(tx).FetchDisciplines(ctx, make(f.Filters))
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	// 11. Build workloads
+	workloads := generator.BuildWorkloads(relevantDistributions, relevantAssignments, studyPlans, groups, disciplines)
 	if len(workloads) == 0 {
 		return nil, generator.ErrNoWorkloads
 	}
 
-	// 11. Run generator (read-only — nothing is written to DB)
-	gen := generator.New(s.cfg, templateSetting, bellSchedules, restriction, workloads, roomIDs, groupIDs, semesterStart, semesterEnd)
+	// 12. Run generator (read-only — nothing is written to DB)
+	gen := generator.New(s.cfg, templateSetting, bellSchedules, restriction, teacherPreferences, labRooms, workloads, roomIDs, groupIDs, semesterStart, semesterEnd)
 	scheduleData, err := gen.Generate(ctx)
 	if err != nil {
 		return nil, err

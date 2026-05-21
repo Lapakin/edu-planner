@@ -9,6 +9,7 @@ var (
 	GroupIDParam            = "group_id"
 	SemesterIDParam         = "semester_id"
 	DisciplineIDParam       = "discipline_id"
+	TeacherIDParam          = "teacher_id"
 	RoleParam               = "role"
 	ScheduleTemplateIDParam = "schedule_template_id"
 	StudyPlanIDParam        = "study_plan_id"

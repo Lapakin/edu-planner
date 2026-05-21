@@ -2,7 +2,6 @@ package generator
 
 import (
 	"context"
-	"errors"
 	"math/rand"
 	"sync"
 	"time"
@@ -27,6 +26,8 @@ func New(
 	templateSetting *domain.ScheduleTemplateSetting,
 	bellSchedules domain.BellSchedules,
 	restriction *domain.ScheduleRestriction,
+	preferences domain.TeacherSlotPreferences,
+	labRooms domain.CycleCommitteeLabRooms,
 	workloads []*Workload,
 	roomIDs []uint64,
 	groupIDs []uint64,
@@ -34,7 +35,7 @@ func New(
 ) *Generator {
 	return &Generator{
 		cfg:       genCfg,
-		settings:  newSettings(templateSetting, bellSchedules, restriction),
+		settings:  newSettings(templateSetting, bellSchedules, restriction, preferences, labRooms),
 		workloads: workloads,
 		roomIDs:   roomIDs,
 		groupIDs:  groupIDs,
@@ -50,6 +51,8 @@ func (g *Generator) Generate(ctx context.Context) (*domain.ScheduleData, error) 
 	defer cancel()
 
 	numGoroutines := max(g.cfg.NumberOfGoroutines, 1)
+	maxAttempts := max(g.cfg.MaxAttempts, numGoroutines)
+	attemptsPerGoroutine := max(maxAttempts/numGoroutines, 1)
 
 	type result struct {
 		data *domain.ScheduleData
@@ -64,27 +67,45 @@ func (g *Generator) Generate(ctx context.Context) (*domain.ScheduleData, error) 
 		go func(goroutineIdx int) {
 			defer wg.Done()
 
-			select {
-			case <-ctx.Done():
-				return
-			default:
+			var lastErr error
+			for attempt := range attemptsPerGoroutine {
+				select {
+				case <-ctx.Done():
+					if lastErr != nil {
+						select {
+						case results <- result{data: nil, err: lastErr}:
+						default:
+						}
+					}
+					return
+				default:
+				}
+
+				seed := time.Now().UnixNano() + int64(goroutineIdx)*1000 + int64(attempt)*997 + rand.Int63()
+				gen := newGeneration(
+					g.settings,
+					g.workloads,
+					g.roomIDs,
+					g.groupIDs,
+					g.startDate,
+					g.endDate,
+					seed,
+				)
+
+				data, err := gen.exec()
+				if err == nil && data != nil {
+					select {
+					case results <- result{data: data, err: nil}:
+					case <-ctx.Done():
+					}
+					return
+				}
+				lastErr = err
 			}
 
-			seed := time.Now().UnixNano() + int64(goroutineIdx)*1000 + rand.Int63()
-			gen := newGeneration(
-				g.settings,
-				g.workloads,
-				g.roomIDs,
-				g.groupIDs,
-				g.startDate,
-				g.endDate,
-				seed,
-			)
-
-			data, err := gen.exec()
-
+			// All attempts for this goroutine exhausted
 			select {
-			case results <- result{data: data, err: err}:
+			case results <- result{data: nil, err: lastErr}:
 			case <-ctx.Done():
 			}
 		}(i)
@@ -97,7 +118,6 @@ func (g *Generator) Generate(ctx context.Context) (*domain.ScheduleData, error) 
 	}()
 
 	var lastErr error
-	retryableErrors := 0
 
 	for {
 		select {
@@ -124,10 +144,6 @@ func (g *Generator) Generate(ctx context.Context) (*domain.ScheduleData, error) 
 
 			if res.err != nil {
 				lastErr = res.err
-				// Workload distribution errors are retryable
-				if errors.Is(res.err, ErrWorkloadDistribution) {
-					retryableErrors++
-				}
 			}
 		}
 	}
@@ -139,6 +155,7 @@ func BuildWorkloads(
 	assignments domain.WorkloadAssignments,
 	studyPlans domain.StudyPlans,
 	groups domain.Groups,
+	disciplines domain.Disciplines,
 ) []*Workload {
-	return buildWorkloadsFromDomain(distributions, assignments, studyPlans, groups)
+	return buildWorkloadsFromDomain(distributions, assignments, studyPlans, groups, disciplines)
 }

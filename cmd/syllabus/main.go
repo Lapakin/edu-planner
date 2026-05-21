@@ -62,11 +62,15 @@ func main() {
 		logger.Fatalf("Failed to start SQS producer: %v", err)
 	}
 
-	var genCfg domain.GenerationConfig
+	genCfg := domain.DefaultGenerationConfig()
 	if cfg.ScheduleGeneration != nil {
 		genCfg = domain.GenerationConfig{
 			Timeout:            time.Duration(cfg.ScheduleGeneration.TimeoutSeconds) * time.Second,
 			NumberOfGoroutines: cfg.ScheduleGeneration.NumberOfGoroutines,
+			MaxAttempts:        cfg.ScheduleGeneration.MaxAttempts,
+		}
+		if genCfg.MaxAttempts <= 0 {
+			genCfg.MaxAttempts = domain.DefaultGenerationConfig().MaxAttempts
 		}
 	}
 

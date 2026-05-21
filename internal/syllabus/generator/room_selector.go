@@ -4,15 +4,20 @@ import "sort"
 
 // roomSelector assigns rooms to scheduled lessons.
 type roomSelector struct {
-	availableRoomIDs []uint64
-	roomUsageCount   map[uint64]int // tracks how often each room is used for balancing
+	availableRoomIDs       []uint64
+	roomUsageCount         map[uint64]int      // tracks how often each room is used for balancing
+	cycleCommitteeLabRooms map[uint64][]uint64 // cycleCommitteeID → preferred room IDs
 }
 
 // newRoomSelector creates a new room selector.
-func newRoomSelector(roomIDs []uint64) *roomSelector {
+func newRoomSelector(roomIDs []uint64, cycleCommitteeLabRooms map[uint64][]uint64) *roomSelector {
+	if cycleCommitteeLabRooms == nil {
+		cycleCommitteeLabRooms = make(map[uint64][]uint64)
+	}
 	return &roomSelector{
-		availableRoomIDs: roomIDs,
-		roomUsageCount:   make(map[uint64]int),
+		availableRoomIDs:       roomIDs,
+		roomUsageCount:         make(map[uint64]int),
+		cycleCommitteeLabRooms: cycleCommitteeLabRooms,
 	}
 }
 
@@ -49,7 +54,7 @@ func (rs *roomSelector) assignRooms(sched *schedule) {
 			for _, l := range daySchedule[ln] {
 				for _, sl := range l.subLessons {
 					if sl.roomID == 0 {
-						roomID := rs.selectRoom(usedRooms)
+						roomID := rs.selectRoomForLesson(usedRooms, l.cycleCommitteeID, l.isLab)
 						sl.roomID = roomID
 						usedRooms[roomID] = true
 					}
@@ -59,9 +64,28 @@ func (rs *roomSelector) assignRooms(sched *schedule) {
 	}
 }
 
-// selectRoom selects the best room considering usage balance.
+// selectRoomForLesson selects the best room for a lesson, preferring cycle-committee-specific rooms for labs.
+func (rs *roomSelector) selectRoomForLesson(usedInSlot map[uint64]bool, cycleCommitteeID uint64, isLab bool) uint64 {
+	// Only apply lab room preference for actual lab lessons
+	if isLab && cycleCommitteeID != 0 {
+		if labRoomIDs, ok := rs.cycleCommitteeLabRooms[cycleCommitteeID]; ok && len(labRoomIDs) > 0 {
+			room := rs.selectFromList(usedInSlot, labRoomIDs)
+			if room != 0 {
+				return room
+			}
+		}
+	}
+	return rs.selectRoom(usedInSlot)
+}
+
+// selectRoom selects the best room from all available rooms considering usage balance.
 func (rs *roomSelector) selectRoom(usedInSlot map[uint64]bool) uint64 {
-	if len(rs.availableRoomIDs) == 0 {
+	return rs.selectFromList(usedInSlot, rs.availableRoomIDs)
+}
+
+// selectFromList selects the best room from a given list considering usage balance.
+func (rs *roomSelector) selectFromList(usedInSlot map[uint64]bool, roomIDs []uint64) uint64 {
+	if len(roomIDs) == 0 {
 		return 0
 	}
 
@@ -69,7 +93,7 @@ func (rs *roomSelector) selectRoom(usedInSlot map[uint64]bool) uint64 {
 	bestRoom := uint64(0)
 	bestCount := int(^uint(0) >> 1) // max int
 
-	for _, roomID := range rs.availableRoomIDs {
+	for _, roomID := range roomIDs {
 		if usedInSlot[roomID] {
 			continue
 		}
@@ -83,7 +107,7 @@ func (rs *roomSelector) selectRoom(usedInSlot map[uint64]bool) uint64 {
 	// If all rooms are used in this slot, just use the least used
 	if bestRoom == 0 {
 		bestCount = int(^uint(0) >> 1)
-		for _, roomID := range rs.availableRoomIDs {
+		for _, roomID := range roomIDs {
 			count := rs.roomUsageCount[roomID]
 			if count < bestCount {
 				bestCount = count
@@ -92,6 +116,8 @@ func (rs *roomSelector) selectRoom(usedInSlot map[uint64]bool) uint64 {
 		}
 	}
 
-	rs.roomUsageCount[bestRoom]++
+	if bestRoom != 0 {
+		rs.roomUsageCount[bestRoom]++
+	}
 	return bestRoom
 }

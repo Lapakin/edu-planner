@@ -21,6 +21,7 @@ type config struct {
 type scheduleGenerationCfg struct {
 	TimeoutSeconds     int `yaml:"timeout_seconds"`
 	NumberOfGoroutines int `yaml:"number_of_goroutines"`
+	MaxAttempts        int `yaml:"max_attempts"`
 }
 
 func (c *config) LoadDBCredentialsFromEnv() {

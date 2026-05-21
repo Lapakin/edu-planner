@@ -13,6 +13,7 @@ const (
 	WeekdayThursday  Weekday = "thursday"
 	WeekdayFriday    Weekday = "friday"
 	WeekdaySaturday  Weekday = "saturday"
+	WeekdaySunday    Weekday = "sunday"
 )
 
 var DefaultEducationWeek = []Weekday{

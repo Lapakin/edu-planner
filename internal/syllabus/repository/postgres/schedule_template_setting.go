@@ -26,7 +26,9 @@ func (r ScheduleTemplateSettingRepository) CreateScheduleTemplateSettings(ctx co
 	builder := q.Insert(ctx).
 		Into("schedule_template_setting").
 		Columns(`
-			hours_per_lesson,
+			academic_year_id,
+			lessons_per_class,
+			study_days_mask,
 			max_identical_lessons_per_day,
 			max_study_hours_per_day,
 			max_teacher_hours_per_week,
@@ -36,7 +38,9 @@ func (r ScheduleTemplateSettingRepository) CreateScheduleTemplateSettings(ctx co
 
 	for _, s := range settings {
 		builder = builder.Values(
-			s.HoursPerLesson,
+			s.AcademicYearID,
+			s.LessonsPerClass,
+			s.StudyDaysMask,
 			s.MaxIdenticalLessonsPerDay,
 			s.MaxStudyHoursPerDay,
 			s.MaxTeacherHoursPerWeek,
@@ -61,7 +65,9 @@ func (r ScheduleTemplateSettingRepository) GetScheduleTemplateSettingByID(ctx co
 	query, args, err := q.Select(ctx).
 		Columns(`
 			id,
-			hours_per_lesson,
+			academic_year_id,
+			lessons_per_class,
+			study_days_mask,
 			max_identical_lessons_per_day,
 			max_study_hours_per_day,
 			max_teacher_hours_per_week,
@@ -88,7 +94,9 @@ func (r ScheduleTemplateSettingRepository) FetchScheduleTemplateSettings(ctx con
 	query, args, err := q.Select(ctx).
 		Columns(`
 			id,
-			hours_per_lesson,
+			academic_year_id,
+			lessons_per_class,
+			study_days_mask,
 			max_identical_lessons_per_day,
 			max_study_hours_per_day,
 			max_teacher_hours_per_week,
@@ -102,6 +110,7 @@ func (r ScheduleTemplateSettingRepository) FetchScheduleTemplateSettings(ctx con
 				Operator: q.And,
 				Conditions: q.Conditions{
 					{Name: domain.IDsParam, Column: "id", Operator: q.Equals},
+					{Name: domain.AcademicYearIDParam, Column: "academic_year_id", Operator: q.Equals},
 				},
 			},
 		}).
@@ -125,18 +134,22 @@ func (r ScheduleTemplateSettingRepository) UpdateScheduleTemplateSettings(ctx co
 		NumberOfRows(len(settings)).
 		PrimaryKey("id").
 		AddBigintColumn("id").
-		AddFloatColumn("hours_per_lesson").
+		AddBigintColumn("academic_year_id").
+		AddIntColumn("lessons_per_class").
+		AddIntColumn("study_days_mask").
 		AddIntColumn("max_identical_lessons_per_day").
 		AddIntColumn("max_study_hours_per_day").
 		AddIntColumn("max_teacher_hours_per_week").
 		AddIntColumn("max_group_lesson_hours_per_week").
 		AddTimeStampColumn("modified_at")
 
-	args := make([]any, 0, 7*len(settings))
+	args := make([]any, 0, 9*len(settings))
 	for _, s := range settings {
 		args = append(args,
 			s.ID,
-			s.HoursPerLesson,
+			s.AcademicYearID,
+			s.LessonsPerClass,
+			int(s.StudyDaysMask),
 			s.MaxIdenticalLessonsPerDay,
 			s.MaxStudyHoursPerDay,
 			s.MaxTeacherHoursPerWeek,

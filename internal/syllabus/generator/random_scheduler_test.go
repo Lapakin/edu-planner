@@ -8,7 +8,7 @@ import (
 )
 
 func makeRandomSchedulerSetup() (*settings, *coordinator, *rand.Rand) {
-	ts := makeTemplateSetting(2.0, 8, 40)
+	ts := makeTemplateSetting(2, 8, 40)
 	bells := makeBellSchedules(4) // slots 1..4
 	r := &domain.ScheduleRestriction{
 		MinGroupLessonsPerDay:   0,
@@ -16,7 +16,7 @@ func makeRandomSchedulerSetup() (*settings, *coordinator, *rand.Rand) {
 		MaxTeacherLessonsPerDay: 5,
 		NoGapsInGroupSchedule:   false,
 	}
-	cfg := newSettings(ts, bells, r)
+	cfg := newSettings(ts, bells, r, nil, nil)
 	coord := newCoordinator(cfg, []uint64{101})
 	rng := rand.New(rand.NewSource(42))
 	return cfg, coord, rng

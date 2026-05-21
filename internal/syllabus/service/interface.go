@@ -26,6 +26,8 @@ type Services struct {
 	BellScheduleSvc            BellScheduleSvc
 	ScheduleTemplateSvc        ScheduleTemplateSvc
 	ScheduleRestrictionSvc     ScheduleRestrictionSvc
+	TeacherSlotPreferenceSvc   TeacherSlotPreferenceSvc
+	CycleCommitteeLabRoomSvc   CycleCommitteeLabRoomSvc
 	UserSvc                    UserSvc
 }
 
@@ -164,6 +166,22 @@ type ScheduleRestrictionSvc interface {
 	FetchScheduleRestrictions(ctx context.Context, filters f.Filters) (domain.ScheduleRestrictions, error)
 	UpdateScheduleRestrictions(ctx context.Context, claims *jwt.Claims, restrictions domain.ScheduleRestrictions) error
 	DeleteScheduleRestrictions(ctx context.Context, claims *jwt.Claims, ids []uint64) error
+}
+
+type TeacherSlotPreferenceSvc interface {
+	CreateTeacherSlotPreferences(ctx context.Context, claims *jwt.Claims, preferences domain.TeacherSlotPreferences) error
+	GetTeacherSlotPreferenceByID(ctx context.Context, id uint64) (*domain.TeacherSlotPreference, error)
+	FetchTeacherSlotPreferences(ctx context.Context, filters f.Filters) (domain.TeacherSlotPreferences, error)
+	UpdateTeacherSlotPreferences(ctx context.Context, claims *jwt.Claims, preferences domain.TeacherSlotPreferences) error
+	DeleteTeacherSlotPreferences(ctx context.Context, claims *jwt.Claims, ids []uint64) error
+}
+
+type CycleCommitteeLabRoomSvc interface {
+	CreateCycleCommitteeLabRooms(ctx context.Context, claims *jwt.Claims, labRooms domain.CycleCommitteeLabRooms) error
+	GetCycleCommitteeLabRoomByID(ctx context.Context, id uint64) (*domain.CycleCommitteeLabRoom, error)
+	FetchCycleCommitteeLabRooms(ctx context.Context, filters f.Filters) (domain.CycleCommitteeLabRooms, error)
+	UpdateCycleCommitteeLabRooms(ctx context.Context, claims *jwt.Claims, labRooms domain.CycleCommitteeLabRooms) error
+	DeleteCycleCommitteeLabRooms(ctx context.Context, claims *jwt.Claims, ids []uint64) error
 }
 
 type UserSvc interface {

@@ -5,9 +5,9 @@ import (
 )
 
 func makeFinderSettings(numBells int) *settings {
-	ts := makeTemplateSetting(2.0, numBells*2, 40)
+	ts := makeTemplateSetting(2, numBells*2, 40)
 	bells := makeBellSchedules(numBells)
-	return newSettings(ts, bells, nil)
+	return newSettings(ts, bells, nil, nil, nil)
 }
 
 func TestFinder_FindUnscheduledNumbers_EmptyBusy(t *testing.T) {

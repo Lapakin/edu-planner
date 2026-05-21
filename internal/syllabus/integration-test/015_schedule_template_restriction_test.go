@@ -30,6 +30,7 @@ func TestFetchScheduleRestrictions(t *testing.T) {
 	ta.NewHTTPCasesRunner("/api/v1/schedule-restrictions", http.MethodGet, adminToken).
 		NewOKRequestWithoutBody(nil, nil, ta.ScheduleRestrictionsArray).
 		NewOKRequestWithoutBody(map[string]any{domain.IDsParam: []uint64{ta.ScheduleRestriction1.ID}}, nil, domain.ScheduleRestrictions{ta.ScheduleRestriction1}).
+		NewOKRequestWithoutBody(map[string]any{domain.AcademicYearIDParam: ta.AcademicYear1.ID}, nil, ta.ScheduleRestrictionsArray).
 		Run(t, ts.URL, ta.DefaultIgnoredFields)
 }
 
@@ -40,10 +41,15 @@ func TestUpdateScheduleRestrictions(t *testing.T) {
 				var modified domain.ScheduleRestrictions
 				utils.Copy(input, &modified)
 				modified[0].MaxGroupLessonsPerDay = 5
+				modified[0].MaxConsecutiveTeacherLessons = 3
+				modified[0].TimePriority = domain.TimePriorityMorning
 				return modified
 			}, http.StatusOK, ta.ScheduleRestrictionsArray,
 		).
-		NewRequestWithBody("NotFound", domain.ScheduleRestrictions{&domain.ScheduleRestriction{ID: 0, MinGroupLessonsPerDay: 2, MaxGroupLessonsPerDay: 4, MaxTeacherLessonsPerDay: 5}}, http.StatusNotFound, ta.ExpectedResponseNotFound).
+		NewRequestWithBody("NotFound", domain.ScheduleRestrictions{&domain.ScheduleRestriction{
+			ID: 0, MinGroupLessonsPerDay: 2, MaxGroupLessonsPerDay: 4, MaxTeacherLessonsPerDay: 5,
+			MaxConsecutiveTeacherLessons: 4, TimePriority: domain.TimePriorityNone, AllowFlowLessons: true,
+		}}, http.StatusNotFound, ta.ExpectedResponseNotFound).
 		NewBadJWTRequest().
 		NewUnmarshalErrorRequest().
 		NewNilBodyRequest().

@@ -8,7 +8,7 @@ import (
 )
 
 func makeSettingsForValidator(maxPerDay, minPerDay int, noGaps bool) *settings {
-	ts := makeTemplateSetting(2.0, maxPerDay*2, 40)
+	ts := makeTemplateSetting(2, maxPerDay*2, 40)
 	bells := makeBellSchedules(maxPerDay + 2)
 	r := &domain.ScheduleRestriction{
 		MinGroupLessonsPerDay:   minPerDay,
@@ -16,7 +16,7 @@ func makeSettingsForValidator(maxPerDay, minPerDay int, noGaps bool) *settings {
 		MaxTeacherLessonsPerDay: 5,
 		NoGapsInGroupSchedule:   noGaps,
 	}
-	return newSettings(ts, bells, r)
+	return newSettings(ts, bells, r, nil, nil)
 }
 
 func makeDates(n int) []date {

@@ -9,7 +9,7 @@ import (
 
 // minimalScenarioSettings builds the settings for the minimal test scenario.
 func minimalScenarioSettings() *settings {
-	ts := makeTemplateSetting(2.0, 8, 40)
+	ts := makeTemplateSetting(2, 8, 40)
 	bells := makeBellSchedules(4)
 	r := &domain.ScheduleRestriction{
 		MinGroupLessonsPerDay:   0,
@@ -17,7 +17,7 @@ func minimalScenarioSettings() *settings {
 		MaxTeacherLessonsPerDay: 5,
 		NoGapsInGroupSchedule:   false,
 	}
-	return newSettings(ts, bells, r)
+	return newSettings(ts, bells, r, nil, nil)
 }
 
 // minimalScenarioWorkload builds the workload for the minimal scenario.

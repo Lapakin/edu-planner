@@ -27,6 +27,9 @@ var (
 	// ErrNoBellSchedule is returned when bell schedules are not configured.
 	ErrNoBellSchedule = errors.New("bell schedule not configured")
 
+	// ErrSemesterNotFound is returned when the requested semester does not exist.
+	ErrSemesterNotFound = errors.New("semester not found")
+
 	// ErrNoGroupSemesters is returned when no group semesters are found for the given semester.
 	ErrNoGroupSemesters = errors.New("no group semesters found for the given semester")
 

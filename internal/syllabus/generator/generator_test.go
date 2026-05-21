@@ -9,7 +9,7 @@ import (
 )
 
 func makeMinimalGenerator() *Generator {
-	ts := makeTemplateSetting(2.0, 8, 40)
+	ts := makeTemplateSetting(2, 8, 40)
 	bells := makeBellSchedules(4)
 	r := &domain.ScheduleRestriction{
 		MinGroupLessonsPerDay:   0,
@@ -40,6 +40,8 @@ func makeMinimalGenerator() *Generator {
 		ts,
 		bells,
 		r,
+		nil,
+		nil,
 		[]*Workload{w},
 		[]uint64{101},
 		[]uint64{1},
@@ -100,7 +102,7 @@ func TestGenerator_Generate_CancelledContext(t *testing.T) {
 }
 
 func TestGenerator_Generate_WithTimeout(t *testing.T) {
-	ts := makeTemplateSetting(2.0, 8, 40)
+	ts := makeTemplateSetting(2, 8, 40)
 	bells := makeBellSchedules(4)
 	r := &domain.ScheduleRestriction{
 		MinGroupLessonsPerDay:   0,
@@ -126,7 +128,7 @@ func TestGenerator_Generate_WithTimeout(t *testing.T) {
 	startDate := time.Date(2024, 9, 2, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2024, 9, 13, 0, 0, 0, 0, time.UTC)
 
-	g := New(genCfg, ts, bells, r, []*Workload{w}, []uint64{101}, []uint64{1}, startDate, endDate)
+	g := New(genCfg, ts, bells, r, nil, nil, []*Workload{w}, []uint64{101}, []uint64{1}, startDate, endDate)
 	data, err := g.Generate(context.Background())
 	if err != nil {
 		t.Fatalf("Generate() with 2 goroutines returned error: %v", err)
@@ -152,7 +154,7 @@ func TestBuildWorkloads_ReturnsWorkloads(t *testing.T) {
 	}
 	groups := domain.Groups{{ID: 1}}
 
-	workloads := BuildWorkloads(distributions, assignments, studyPlans, groups)
+	workloads := BuildWorkloads(distributions, assignments, studyPlans, groups, nil)
 	if len(workloads) != 1 {
 		t.Fatalf("expected 1 workload, got %d", len(workloads))
 	}
@@ -176,6 +178,7 @@ func TestBuildWorkloads_EmptyInputs(t *testing.T) {
 		domain.WorkloadAssignments{},
 		domain.StudyPlans{},
 		domain.Groups{},
+		nil,
 	)
 	if len(workloads) != 0 {
 		t.Errorf("expected 0 workloads for empty inputs, got %d", len(workloads))

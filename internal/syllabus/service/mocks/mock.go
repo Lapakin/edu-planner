@@ -1671,6 +1671,198 @@ func (mr *MockScheduleRestrictionSvcMockRecorder) UpdateScheduleRestrictions(ctx
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduleRestrictions", reflect.TypeOf((*MockScheduleRestrictionSvc)(nil).UpdateScheduleRestrictions), ctx, claims, restrictions)
 }
 
+// MockTeacherSlotPreferenceSvc is a mock of TeacherSlotPreferenceSvc interface.
+type MockTeacherSlotPreferenceSvc struct {
+	ctrl     *gomock.Controller
+	recorder *MockTeacherSlotPreferenceSvcMockRecorder
+	isgomock struct{}
+}
+
+// MockTeacherSlotPreferenceSvcMockRecorder is the mock recorder for MockTeacherSlotPreferenceSvc.
+type MockTeacherSlotPreferenceSvcMockRecorder struct {
+	mock *MockTeacherSlotPreferenceSvc
+}
+
+// NewMockTeacherSlotPreferenceSvc creates a new mock instance.
+func NewMockTeacherSlotPreferenceSvc(ctrl *gomock.Controller) *MockTeacherSlotPreferenceSvc {
+	mock := &MockTeacherSlotPreferenceSvc{ctrl: ctrl}
+	mock.recorder = &MockTeacherSlotPreferenceSvcMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTeacherSlotPreferenceSvc) EXPECT() *MockTeacherSlotPreferenceSvcMockRecorder {
+	return m.recorder
+}
+
+// CreateTeacherSlotPreferences mocks base method.
+func (m *MockTeacherSlotPreferenceSvc) CreateTeacherSlotPreferences(ctx context.Context, claims *jwt.Claims, preferences domain.TeacherSlotPreferences) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTeacherSlotPreferences", ctx, claims, preferences)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateTeacherSlotPreferences indicates an expected call of CreateTeacherSlotPreferences.
+func (mr *MockTeacherSlotPreferenceSvcMockRecorder) CreateTeacherSlotPreferences(ctx, claims, preferences any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTeacherSlotPreferences", reflect.TypeOf((*MockTeacherSlotPreferenceSvc)(nil).CreateTeacherSlotPreferences), ctx, claims, preferences)
+}
+
+// DeleteTeacherSlotPreferences mocks base method.
+func (m *MockTeacherSlotPreferenceSvc) DeleteTeacherSlotPreferences(ctx context.Context, claims *jwt.Claims, ids []uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteTeacherSlotPreferences", ctx, claims, ids)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteTeacherSlotPreferences indicates an expected call of DeleteTeacherSlotPreferences.
+func (mr *MockTeacherSlotPreferenceSvcMockRecorder) DeleteTeacherSlotPreferences(ctx, claims, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTeacherSlotPreferences", reflect.TypeOf((*MockTeacherSlotPreferenceSvc)(nil).DeleteTeacherSlotPreferences), ctx, claims, ids)
+}
+
+// FetchTeacherSlotPreferences mocks base method.
+func (m *MockTeacherSlotPreferenceSvc) FetchTeacherSlotPreferences(ctx context.Context, filters filter.Filters) (domain.TeacherSlotPreferences, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchTeacherSlotPreferences", ctx, filters)
+	ret0, _ := ret[0].(domain.TeacherSlotPreferences)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchTeacherSlotPreferences indicates an expected call of FetchTeacherSlotPreferences.
+func (mr *MockTeacherSlotPreferenceSvcMockRecorder) FetchTeacherSlotPreferences(ctx, filters any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchTeacherSlotPreferences", reflect.TypeOf((*MockTeacherSlotPreferenceSvc)(nil).FetchTeacherSlotPreferences), ctx, filters)
+}
+
+// GetTeacherSlotPreferenceByID mocks base method.
+func (m *MockTeacherSlotPreferenceSvc) GetTeacherSlotPreferenceByID(ctx context.Context, id uint64) (*domain.TeacherSlotPreference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTeacherSlotPreferenceByID", ctx, id)
+	ret0, _ := ret[0].(*domain.TeacherSlotPreference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTeacherSlotPreferenceByID indicates an expected call of GetTeacherSlotPreferenceByID.
+func (mr *MockTeacherSlotPreferenceSvcMockRecorder) GetTeacherSlotPreferenceByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeacherSlotPreferenceByID", reflect.TypeOf((*MockTeacherSlotPreferenceSvc)(nil).GetTeacherSlotPreferenceByID), ctx, id)
+}
+
+// UpdateTeacherSlotPreferences mocks base method.
+func (m *MockTeacherSlotPreferenceSvc) UpdateTeacherSlotPreferences(ctx context.Context, claims *jwt.Claims, preferences domain.TeacherSlotPreferences) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTeacherSlotPreferences", ctx, claims, preferences)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateTeacherSlotPreferences indicates an expected call of UpdateTeacherSlotPreferences.
+func (mr *MockTeacherSlotPreferenceSvcMockRecorder) UpdateTeacherSlotPreferences(ctx, claims, preferences any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTeacherSlotPreferences", reflect.TypeOf((*MockTeacherSlotPreferenceSvc)(nil).UpdateTeacherSlotPreferences), ctx, claims, preferences)
+}
+
+// MockCycleCommitteeLabRoomSvc is a mock of CycleCommitteeLabRoomSvc interface.
+type MockCycleCommitteeLabRoomSvc struct {
+	ctrl     *gomock.Controller
+	recorder *MockCycleCommitteeLabRoomSvcMockRecorder
+	isgomock struct{}
+}
+
+// MockCycleCommitteeLabRoomSvcMockRecorder is the mock recorder for MockCycleCommitteeLabRoomSvc.
+type MockCycleCommitteeLabRoomSvcMockRecorder struct {
+	mock *MockCycleCommitteeLabRoomSvc
+}
+
+// NewMockCycleCommitteeLabRoomSvc creates a new mock instance.
+func NewMockCycleCommitteeLabRoomSvc(ctrl *gomock.Controller) *MockCycleCommitteeLabRoomSvc {
+	mock := &MockCycleCommitteeLabRoomSvc{ctrl: ctrl}
+	mock.recorder = &MockCycleCommitteeLabRoomSvcMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCycleCommitteeLabRoomSvc) EXPECT() *MockCycleCommitteeLabRoomSvcMockRecorder {
+	return m.recorder
+}
+
+// CreateCycleCommitteeLabRooms mocks base method.
+func (m *MockCycleCommitteeLabRoomSvc) CreateCycleCommitteeLabRooms(ctx context.Context, claims *jwt.Claims, labRooms domain.CycleCommitteeLabRooms) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCycleCommitteeLabRooms", ctx, claims, labRooms)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateCycleCommitteeLabRooms indicates an expected call of CreateCycleCommitteeLabRooms.
+func (mr *MockCycleCommitteeLabRoomSvcMockRecorder) CreateCycleCommitteeLabRooms(ctx, claims, labRooms any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCycleCommitteeLabRooms", reflect.TypeOf((*MockCycleCommitteeLabRoomSvc)(nil).CreateCycleCommitteeLabRooms), ctx, claims, labRooms)
+}
+
+// DeleteCycleCommitteeLabRooms mocks base method.
+func (m *MockCycleCommitteeLabRoomSvc) DeleteCycleCommitteeLabRooms(ctx context.Context, claims *jwt.Claims, ids []uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCycleCommitteeLabRooms", ctx, claims, ids)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCycleCommitteeLabRooms indicates an expected call of DeleteCycleCommitteeLabRooms.
+func (mr *MockCycleCommitteeLabRoomSvcMockRecorder) DeleteCycleCommitteeLabRooms(ctx, claims, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCycleCommitteeLabRooms", reflect.TypeOf((*MockCycleCommitteeLabRoomSvc)(nil).DeleteCycleCommitteeLabRooms), ctx, claims, ids)
+}
+
+// FetchCycleCommitteeLabRooms mocks base method.
+func (m *MockCycleCommitteeLabRoomSvc) FetchCycleCommitteeLabRooms(ctx context.Context, filters filter.Filters) (domain.CycleCommitteeLabRooms, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchCycleCommitteeLabRooms", ctx, filters)
+	ret0, _ := ret[0].(domain.CycleCommitteeLabRooms)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchCycleCommitteeLabRooms indicates an expected call of FetchCycleCommitteeLabRooms.
+func (mr *MockCycleCommitteeLabRoomSvcMockRecorder) FetchCycleCommitteeLabRooms(ctx, filters any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchCycleCommitteeLabRooms", reflect.TypeOf((*MockCycleCommitteeLabRoomSvc)(nil).FetchCycleCommitteeLabRooms), ctx, filters)
+}
+
+// GetCycleCommitteeLabRoomByID mocks base method.
+func (m *MockCycleCommitteeLabRoomSvc) GetCycleCommitteeLabRoomByID(ctx context.Context, id uint64) (*domain.CycleCommitteeLabRoom, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCycleCommitteeLabRoomByID", ctx, id)
+	ret0, _ := ret[0].(*domain.CycleCommitteeLabRoom)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCycleCommitteeLabRoomByID indicates an expected call of GetCycleCommitteeLabRoomByID.
+func (mr *MockCycleCommitteeLabRoomSvcMockRecorder) GetCycleCommitteeLabRoomByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCycleCommitteeLabRoomByID", reflect.TypeOf((*MockCycleCommitteeLabRoomSvc)(nil).GetCycleCommitteeLabRoomByID), ctx, id)
+}
+
+// UpdateCycleCommitteeLabRooms mocks base method.
+func (m *MockCycleCommitteeLabRoomSvc) UpdateCycleCommitteeLabRooms(ctx context.Context, claims *jwt.Claims, labRooms domain.CycleCommitteeLabRooms) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCycleCommitteeLabRooms", ctx, claims, labRooms)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCycleCommitteeLabRooms indicates an expected call of UpdateCycleCommitteeLabRooms.
+func (mr *MockCycleCommitteeLabRoomSvcMockRecorder) UpdateCycleCommitteeLabRooms(ctx, claims, labRooms any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCycleCommitteeLabRooms", reflect.TypeOf((*MockCycleCommitteeLabRoomSvc)(nil).UpdateCycleCommitteeLabRooms), ctx, claims, labRooms)
+}
+
 // MockUserSvc is a mock of UserSvc interface.
 type MockUserSvc struct {
 	ctrl     *gomock.Controller

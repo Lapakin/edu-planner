@@ -74,6 +74,8 @@ func weekdayToTimeWeekday(wd domain.Weekday) time.Weekday {
 		return time.Friday
 	case domain.WeekdaySaturday:
 		return time.Saturday
+	case domain.WeekdaySunday:
+		return time.Sunday
 	default:
 		return time.Monday
 	}

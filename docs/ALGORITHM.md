@@ -48,9 +48,12 @@ Each goroutine executes these stages in order. A failure at any stage causes the
                                → numLessons, denomLessons (per-week count for each workload)
 5.  Extract first-week dates   firstWeekDates(numeratorDates)
                                (template covers one repeating week, not the full semester)
+5a. Apply forbidden slots      generation.applyTeacherForbiddenSlots(availability, allDates)
+                               → pre-marks forbidden teacher slots as unavailable before validation
 6.  Pre-generation validation  validator.validate(numLessons, firstWeek, groupIDs)
                                validator.validate(denomLessons, denomFirstWeek, groupIDs)
 7.  Random scheduling          randomScheduler.scheduleRandom(numLessons, firstWeek)
+                               → forbidden slots skipped; preferred slots weighted higher
                                → unscheduled (lessons that didn't fit randomly)
 8.  Gap compression            fixer.fixWeekSchedule(firstWeek, groupIDs)
 9.  Recursive scheduling       recursiveScheduler.schedule(unscheduled, firstWeek)
@@ -111,10 +114,10 @@ Primary source of capacity parameters.
 
 | Field | Role |
 |---|---|
-| `HoursPerLesson` | Duration of one lesson in hours (e.g., 1.5 or 2.0) |
-| `MaxStudyHoursPerDay` | Maximum study hours per day → `floor(MaxStudyHoursPerDay / HoursPerLesson)` = max group lessons/day |
-| `MaxTeacherHoursPerWeek` | Teacher weekly ceiling in hours → `floor(.../ HoursPerLesson)` = max teacher lessons/week |
-| `MaxGroupLessonHoursPerWeek` | Optional group weekly ceiling in hours |
+| `LessonsPerClass` | Number of academic hours in one lesson slot (e.g., 1, 2, or 3) |
+| `MaxStudyHoursPerDay` | Maximum study hours per day → `MaxStudyHoursPerDay / LessonsPerClass` = max group lessons/day |
+| `MaxTeacherHoursPerWeek` | Teacher weekly ceiling in hours → `MaxTeacherHoursPerWeek / LessonsPerClass` = max teacher lessons/week |
+| `MaxGroupLessonHoursPerWeek` | Optional group weekly ceiling in hours → `/ LessonsPerClass` = max group lessons/week |
 | `MaxIdenticalLessonsPerDay` | Max times the same pattern (group+teacher+subject) may appear on one day |
 
 ### `ScheduleRestriction`
@@ -124,11 +127,40 @@ Applies additional hard caps on top of `ScheduleTemplateSetting`. The latest rec
 | Field | Default | Role |
 |---|---|---|
 | `MinGroupLessonsPerDay` | 2 | Minimum lessons per day when a group is scheduled |
-| `MaxGroupLessonsPerDay` | 4 | Hard ceiling; takes effect only when `< hours-based max` |
+| `MaxGroupLessonsPerDay` | 4 | Hard ceiling; takes effect only when `< LessonsPerClass-based max` |
 | `MaxTeacherLessonsPerDay` | 5 | Hard ceiling for teachers (independent from groups) |
+| `MaxConsecutiveTeacherLessons` | 4 | Maximum consecutive lesson slots for a teacher without a break |
 | `NoGapsInGroupSchedule` | true | Require consecutive lesson slots for each group each day |
+| `TimePriority` | none | Preference for scheduling lessons in the morning or afternoon |
+| `AllowFlowLessons` | true | Whether flow lessons (multiple groups in one room) are permitted |
 
-**Priority rule**: `effective max = min(hours-based max, restriction max)`. A restriction can only make limits more strict, never more lenient than the hours-based calculation.
+**Priority rule**: `effective max = min(LessonsPerClass-based max, restriction max)`. A restriction can only make limits more strict, never more lenient than the LessonsPerClass-based calculation.
+
+### `TeacherSlotPreference`
+
+Per-teacher time slot preferences. Stored in the database and loaded at generation time for the relevant academic year.
+
+| Field | Role |
+|---|---|
+| `TeacherID` | The teacher these preferences apply to |
+| `Weekday` | Day of the week (monday, tuesday, …, saturday) |
+| `LessonNumber` | The lesson slot number on that day |
+| `SlotType` | `preferred` or `forbidden` |
+
+**Forbidden slots** are pre-marked as unavailable in the availability tracker before any placement begins. The random and recursive schedulers skip all slots that are forbidden for any teacher involved in a lesson.
+
+**Preferred slots** act as a soft bias in the random scheduler: when selecting among available slots for a teacher, slots that are preferred for all involved teachers are weighted with a higher probability (`prioritySlotWeight`). If no preferred slot is available, the scheduler falls back to any free slot.
+
+### `CycleCommitteeLabRoom`
+
+Specifies which rooms are designated lab rooms for a given cycle committee. Used to direct lab-type lessons to the appropriate rooms.
+
+| Field | Role |
+|---|---|
+| `CycleCommitteeID` | The cycle committee whose disciplines should use these rooms |
+| `RoomID` | A room designated for lab work of that committee |
+
+When the room selector assigns rooms after all lessons are placed, it checks each lesson's `cycleCommitteeID`. If the lesson belongs to a committee that has designated lab rooms, the selector preferentially picks from those rooms. If none of the designated rooms are free in that slot, it falls back to the general room pool.
 
 ### `GenerationConfig`
 
@@ -146,7 +178,7 @@ Runtime parameters for the parallel orchestrator.
 Each `WorkloadDistribution` + its `WorkloadAssignment` entries represent one teacher's assignment for a group/subject pair. The distributor converts total classroom hours into a per-week lesson count.
 
 ```
-totalLessons = ceil(totalHours / hoursPerLesson)
+totalLessons = ceil(totalHours / lessonsPerClass)
 numeratorLessons  = ceil(totalLessons / 2)   + remainder if totalLessons is odd
 denominatorLessons = floor(totalLessons / 2)
 
@@ -242,8 +274,10 @@ Room assignment happens **after** all lessons are placed (stage 12), as a separa
 
 The `roomSelector` selects rooms greedily:
 1. For each lesson slot (date + lesson number), collect rooms already assigned in that slot.
-2. For each `internalSubLesson` without a room, pick the **least-used room** that is not already occupied in this slot.
-3. If all rooms are already in use in the slot (more sub-lessons than rooms), fall back to the globally least-used room (double-booking rooms is allowed as a last resort).
+2. For each `internalSubLesson` without a room:
+   a. If the lesson's `cycleCommitteeID` has designated lab rooms (`CycleCommitteeLabRoom` entries), prefer those rooms.
+   b. Otherwise, pick the **least-used room** from the general pool that is not already occupied in this slot.
+3. If all preferred or available rooms are occupied in the slot, fall back to the globally least-used room (double-booking is allowed as a last resort).
 
 Usage counts persist across the full schedule so that room load is balanced over the week.
 
@@ -306,9 +340,9 @@ A **pattern** is the string key `"groupID:teacherID:subjectID"`. The controller 
 
 ```
 ScheduleTemplateSetting:
-  HoursPerLesson:            2.0
-  MaxStudyHoursPerDay:       8       → max 4 lessons/day per group
-  MaxTeacherHoursPerWeek:    40      → max 20 lessons/week per teacher
+  LessonsPerClass:           2       (2 academic hours per lesson slot)
+  MaxStudyHoursPerDay:       8       → max 4 lessons/day per group (8/2)
+  MaxTeacherHoursPerWeek:    40      → max 20 lessons/week per teacher (40/2)
   MaxIdenticalLessonsPerDay: 2
 
 ScheduleRestriction:
@@ -322,12 +356,19 @@ BellSchedules: 4 entries (lesson numbers 1–4)
 Semester: 2 weeks, Mon–Fri (10 education days)
 
 WorkloadDistribution:
-  Group 1, Study Plan A (Discipline: Mathematics)
+  Group 1, Study Plan A (Discipline: Mathematics, CycleCommittee: Math Committee)
 WorkloadAssignment:
   Teacher 42, AssignedHours: 8
   → totalLessons = ceil(8/2) = 4
   → numeratorLessons = 2, denominatorLessons = 2
   → each placed once per week in each period
+
+TeacherSlotPreference (optional):
+  Teacher 42, monday, lesson 1: forbidden  → slot 1 on Monday skipped for Teacher 42
+  Teacher 42, wednesday, lesson 2: preferred → slot 2 on Wednesday weighted higher
+
+CycleCommitteeLabRoom (optional):
+  Math Committee → Room 301  → lab lessons for Math Committee prefer Room 301
 
 Result:
   Numerator:  { monday: {1: [...], 2: [...]}, ... }

@@ -29,6 +29,8 @@ type RepoManager interface {
 	NewBellScheduleRepo(db sqlx.ExtContext) BellScheduleRepository
 	NewScheduleTemplateRepo(db sqlx.ExtContext) ScheduleTemplateRepository
 	NewScheduleRestrictionRepo(db sqlx.ExtContext) ScheduleRestrictionRepository
+	NewTeacherSlotPreferenceRepo(db sqlx.ExtContext) TeacherSlotPreferenceRepository
+	NewCycleCommitteeLabRoomRepo(db sqlx.ExtContext) CycleCommitteeLabRoomRepository
 	NewUserRepo(db sqlx.ExtContext) UserRepository
 }
 
@@ -178,6 +180,22 @@ type ScheduleRestrictionRepository interface {
 	FetchScheduleRestrictions(ctx context.Context, filters f.Filters) (domain.ScheduleRestrictions, error)
 	UpdateScheduleRestrictions(ctx context.Context, restrictions domain.ScheduleRestrictions) error
 	DeleteScheduleRestrictions(ctx context.Context, ids []uint64) error
+}
+
+type TeacherSlotPreferenceRepository interface {
+	CreateTeacherSlotPreferences(ctx context.Context, preferences domain.TeacherSlotPreferences) error
+	GetTeacherSlotPreferenceByID(ctx context.Context, id uint64) (*domain.TeacherSlotPreference, error)
+	FetchTeacherSlotPreferences(ctx context.Context, filters f.Filters) (domain.TeacherSlotPreferences, error)
+	UpdateTeacherSlotPreferences(ctx context.Context, preferences domain.TeacherSlotPreferences) error
+	DeleteTeacherSlotPreferences(ctx context.Context, ids []uint64) error
+}
+
+type CycleCommitteeLabRoomRepository interface {
+	CreateCycleCommitteeLabRooms(ctx context.Context, labRooms domain.CycleCommitteeLabRooms) error
+	GetCycleCommitteeLabRoomByID(ctx context.Context, id uint64) (*domain.CycleCommitteeLabRoom, error)
+	FetchCycleCommitteeLabRooms(ctx context.Context, filters f.Filters) (domain.CycleCommitteeLabRooms, error)
+	UpdateCycleCommitteeLabRooms(ctx context.Context, labRooms domain.CycleCommitteeLabRooms) error
+	DeleteCycleCommitteeLabRooms(ctx context.Context, ids []uint64) error
 }
 
 type UserRepository interface {
