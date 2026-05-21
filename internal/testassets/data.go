@@ -6,9 +6,6 @@ import (
 	"github.com/Lapakin/edu-planner/internal/domain"
 )
 
-//go:fix inline
-func Ptr[T any](v T) *T { return new(v) }
-
 const (
 	GarbageString = "garbage"
 	EmptyString   = ""
@@ -59,16 +56,18 @@ var (
 	SemestersArray = domain.Semesters{Semester1, Semester2}
 
 	BellSchedule1 = &domain.BellSchedule{
-		ID:           1,
-		LessonNumber: 1,
-		StartTime:    "08:00:00",
-		EndTime:      "09:20:00",
+		ID:             1,
+		AcademicYearID: AcademicYear1.ID,
+		LessonNumber:   1,
+		StartTime:      "08:00:00",
+		EndTime:        "09:20:00",
 	}
 	BellSchedule2 = &domain.BellSchedule{
-		ID:           2,
-		LessonNumber: 2,
-		StartTime:    "09:35:00",
-		EndTime:      "10:55:00",
+		ID:             2,
+		AcademicYearID: AcademicYear1.ID,
+		LessonNumber:   2,
+		StartTime:      "09:35:00",
+		EndTime:        "10:55:00",
 	}
 	BellSchedulesArray = domain.BellSchedules{BellSchedule1, BellSchedule2}
 

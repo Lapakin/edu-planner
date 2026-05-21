@@ -26,6 +26,7 @@ func (r BellScheduleRepository) CreateBellSchedules(ctx context.Context, schedul
 	builder := q.Insert(ctx).
 		Into("bell_schedule").
 		Columns(`
+			academic_year_id,
 			lesson_number,
 			start_time,
 			end_time
@@ -33,6 +34,7 @@ func (r BellScheduleRepository) CreateBellSchedules(ctx context.Context, schedul
 
 	for _, s := range schedules {
 		builder = builder.Values(
+			s.AcademicYearID,
 			s.LessonNumber,
 			s.StartTime,
 			s.EndTime,
@@ -55,6 +57,7 @@ func (r BellScheduleRepository) GetBellScheduleByID(ctx context.Context, id uint
 	query, args, err := q.Select(ctx).
 		Columns(`
 			id,
+			academic_year_id,
 			lesson_number,
 			start_time,
 			end_time
@@ -66,18 +69,19 @@ func (r BellScheduleRepository) GetBellScheduleByID(ctx context.Context, id uint
 		return nil, err
 	}
 
-	s := &domain.BellSchedule{}
-	if err = sqlx.GetContext(ctx, r.db, s, query, args...); err != nil {
+	bell := &domain.BellSchedule{}
+	if err = sqlx.GetContext(ctx, r.db, bell, query, args...); err != nil {
 		return nil, err
 	}
 
-	return s, nil
+	return bell, nil
 }
 
 func (r BellScheduleRepository) FetchBellSchedules(ctx context.Context, filters f.Filters) (domain.BellSchedules, error) {
 	query, args, err := q.Select(ctx).
 		Columns(`
 			id,
+			academic_year_id,
 			lesson_number,
 			start_time,
 			end_time
@@ -88,6 +92,7 @@ func (r BellScheduleRepository) FetchBellSchedules(ctx context.Context, filters 
 				Operator: q.And,
 				Conditions: q.Conditions{
 					{Name: domain.IDsParam, Column: "id", Operator: q.Equals},
+					{Name: domain.AcademicYearIDParam, Column: "academic_year_id", Operator: q.Equals},
 				},
 			},
 		}).
@@ -97,12 +102,12 @@ func (r BellScheduleRepository) FetchBellSchedules(ctx context.Context, filters 
 		return nil, err
 	}
 
-	schedules := make(domain.BellSchedules, 0)
-	if err = sqlx.SelectContext(ctx, r.db, &schedules, query, args...); err != nil {
+	bells := make(domain.BellSchedules, 0)
+	if err = sqlx.SelectContext(ctx, r.db, &bells, query, args...); err != nil {
 		return nil, err
 	}
 
-	return schedules, nil
+	return bells, nil
 }
 
 func (r BellScheduleRepository) UpdateBellSchedules(ctx context.Context, schedules domain.BellSchedules) error {
@@ -111,31 +116,36 @@ func (r BellScheduleRepository) UpdateBellSchedules(ctx context.Context, schedul
 		NumberOfRows(len(schedules)).
 		PrimaryKey("id").
 		AddBigintColumn("id").
+		AddBigintColumn("academic_year_id").
 		AddIntColumn("lesson_number").
 		AddTimeColumn("start_time").
 		AddTimeColumn("end_time")
 
-	args := make([]any, 0, 4*len(schedules))
+	args := make([]any, 0, 5*len(schedules))
 	for _, s := range schedules {
 		args = append(args,
 			s.ID,
+			s.AcademicYearID,
 			s.LessonNumber,
 			s.StartTime,
 			s.EndTime,
 		)
 	}
 
-	return builder.
-		ReturningID().
-		QueryxContext(r.db, args, func(rows *sqlx.Rows, i *int) error {
-			for ; rows.Next(); *i++ {
-				var id uint64
-				if err := rows.Scan(&id); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
+	result, err := builder.ExecContext(r.db, args)
+	if err != nil {
+		return err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
 
 func (r BellScheduleRepository) DeleteBellSchedules(ctx context.Context, ids []uint64) error {
@@ -157,7 +167,6 @@ func (r BellScheduleRepository) DeleteBellSchedules(ctx context.Context, ids []u
 	if err != nil {
 		return err
 	}
-
 	if affected == 0 {
 		return sql.ErrNoRows
 	}
