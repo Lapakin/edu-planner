@@ -24,14 +24,12 @@ func (r *TeacherRepository) CreateTeachers(ctx context.Context, teachers domain.
 	builder := q.Insert(ctx).
 		Into("teacher").
 		Columns(`
-			id,
 			user_id,
 			created_at
 		`)
 
 	for _, te := range teachers {
 		builder = builder.Values(
-			te.ID,
 			te.UserID,
 			te.CreatedAt,
 		)
@@ -61,6 +59,32 @@ func (r *TeacherRepository) GetTeacherByID(ctx context.Context, id uint64) (*dom
 		From("teacher t").
 		InnerJoin("academic_year_to_teacher AS ta ON ta.teacher_id = t.id").
 		WhereID(id).
+		IsDeleted(false).
+		ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	teacher := &domain.Teacher{}
+	if err = sqlx.GetContext(ctx, r.db, teacher, query, args...); err != nil {
+		return nil, err
+	}
+
+	return teacher, nil
+}
+
+func (r *TeacherRepository) GetTeacherByUserID(ctx context.Context, userID uint64) (*domain.Teacher, error) {
+	query, args, err := q.Select(ctx).
+		Columns(`
+			t.id,
+			t.user_id,
+			ta.academic_year_id,
+			t.created_at,
+			t.modified_at
+		`).
+		From("teacher t").
+		InnerJoin("academic_year_to_teacher AS ta ON ta.teacher_id = t.id").
+		Where("t.user_id = ?", userID).
 		IsDeleted(false).
 		ToSQL()
 	if err != nil {

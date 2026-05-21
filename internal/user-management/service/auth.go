@@ -8,8 +8,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/Lapakin/edu-planner/internal/adapter/json"
 	"github.com/Lapakin/edu-planner/internal/adapter/jwt"
 	"github.com/Lapakin/edu-planner/internal/domain"
 	"github.com/Lapakin/edu-planner/internal/logging"
@@ -108,6 +110,23 @@ func (s *authSvc) CreateInvite(ctx context.Context, claims *jwt.Claims, req doma
 	}
 
 	if err = s.rm.NewAuthRepo(tx).CreateInviteToken(ctx, inviteToken); err != nil {
+		return nil, handleDBError(err)
+	}
+
+	var objBytes json.RawMessage
+	objBytes, err = json.Marshal(user)
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	massage := &domain.Massage{
+		EventID:    uuid.New().String(),
+		ActionType: domain.ActionTypeCreate,
+		ObjectType: domain.ObjectTypeUser,
+		Object:     objBytes,
+		Claims:     claims,
+	}
+	if err = s.rm.NewMessageRepo(tx).Write(ctx, domain.Massages{massage}); err != nil {
 		return nil, handleDBError(err)
 	}
 

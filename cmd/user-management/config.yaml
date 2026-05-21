@@ -13,6 +13,7 @@ logging:
 
 sqs:
   queue_name: "user-management-queue"
+  consumer_queue_name: "syllabus-message-queue"
   endpoint: "http://localstack:4566"
   region: "us-east-1"
 

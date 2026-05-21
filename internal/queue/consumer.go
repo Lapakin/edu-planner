@@ -22,7 +22,7 @@ func StartMassageConsumer(ctx context.Context, l *logging.Logger, cfg *broker.Co
 
 	client := sqs.NewFromConfig(awsCfg)
 	urlResult, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
-		QueueName: aws.String(cfg.QueueName),
+		QueueName: aws.String(cfg.GetConsumerQueueName()),
 	})
 	if err != nil {
 		l.Errorf("Failed to get queue url for consumer: %v", err)

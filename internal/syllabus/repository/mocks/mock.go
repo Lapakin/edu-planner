@@ -407,6 +407,21 @@ func (mr *MockAcademicYearRepositoryMockRecorder) GetAcademicYearByID(ctx, id an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAcademicYearByID", reflect.TypeOf((*MockAcademicYearRepository)(nil).GetAcademicYearByID), ctx, id)
 }
 
+// GetActiveAcademicYear mocks base method.
+func (m *MockAcademicYearRepository) GetActiveAcademicYear(ctx context.Context) (*domain.AcademicYear, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActiveAcademicYear", ctx)
+	ret0, _ := ret[0].(*domain.AcademicYear)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetActiveAcademicYear indicates an expected call of GetActiveAcademicYear.
+func (mr *MockAcademicYearRepositoryMockRecorder) GetActiveAcademicYear(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveAcademicYear", reflect.TypeOf((*MockAcademicYearRepository)(nil).GetActiveAcademicYear), ctx)
+}
+
 // UpdateAcademicYears mocks base method.
 func (m *MockAcademicYearRepository) UpdateAcademicYears(ctx context.Context, academicYears domain.AcademicYears) error {
 	m.ctrl.T.Helper()
@@ -1051,6 +1066,21 @@ func (m *MockTeacherRepository) GetTeacherByID(ctx context.Context, id uint64) (
 func (mr *MockTeacherRepositoryMockRecorder) GetTeacherByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeacherByID", reflect.TypeOf((*MockTeacherRepository)(nil).GetTeacherByID), ctx, id)
+}
+
+// GetTeacherByUserID mocks base method.
+func (m *MockTeacherRepository) GetTeacherByUserID(ctx context.Context, userID uint64) (*domain.Teacher, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTeacherByUserID", ctx, userID)
+	ret0, _ := ret[0].(*domain.Teacher)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTeacherByUserID indicates an expected call of GetTeacherByUserID.
+func (mr *MockTeacherRepositoryMockRecorder) GetTeacherByUserID(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeacherByUserID", reflect.TypeOf((*MockTeacherRepository)(nil).GetTeacherByUserID), ctx, userID)
 }
 
 // UpdateTeachers mocks base method.

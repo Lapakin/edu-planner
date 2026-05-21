@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Lapakin/edu-planner/internal/domain"
 	"github.com/Lapakin/edu-planner/internal/syllabus/repository/postgres"
@@ -154,6 +155,19 @@ func TestActivateAcademicYear(t *testing.T) {
 			assert.Equal(t, tc.expectedError, err)
 		})
 	}
+}
+
+func TestGetActiveAcademicYear(t *testing.T) {
+	repo := postgres.NewAcademicYearRepository(db)
+	ctx := context.Background()
+
+	t.Run("OK", func(t *testing.T) {
+		output, err := repo.GetActiveAcademicYear(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, output)
+		assert.Equal(t, ta.AcademicYear1.ID, output.ID)
+		assert.True(t, output.IsActive)
+	})
 }
 
 func TestUpdateAcademicYears(t *testing.T) {
