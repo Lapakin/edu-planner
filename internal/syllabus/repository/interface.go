@@ -39,7 +39,7 @@ type AcademicYearRepository interface {
 	UpdateAcademicYears(ctx context.Context, academicYears domain.AcademicYears) error
 	DeleteAcademicYears(ctx context.Context, ids []uint64) error
 	ActivateAcademicYear(ctx context.Context, id uint64, currentTime time.Time) error
-	DeactivateAcademicYear(ctx context.Context, id uint64, currentTime time.Time) error
+	DeactivateAllAcademicYears(ctx context.Context, currentTime time.Time) error
 }
 
 type SemesterRepository interface {

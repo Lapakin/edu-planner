@@ -190,30 +190,3 @@ func NewActivateAcademicYearByIDHandler(svc service.AcademicYearSvc) gin.Handler
 		rest.RespondJSON(c, http.StatusOK, nil)
 	}
 }
-
-func NewDeactivateAcademicYearByIDHandler(svc service.AcademicYearSvc) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		claims, err := jwt.ExtractClaims(c.GetHeader(jwt.AuthHeader))
-		if err != nil {
-			rest.RespondError(c, http.StatusUnauthorized, jwt.ErrInvalidToken)
-			return
-		}
-
-		academicYearID, err := utils.StringToUint64(c.Param("academicYearId"))
-		if err != nil {
-			rest.RespondError(c, http.StatusBadRequest, rest.ErrConvID)
-			return
-		}
-
-		if err = svc.DeactivateAcademicYear(c.Request.Context(), claims, academicYearID); err != nil {
-			if errors.Is(err, service.ErrNotFound) {
-				rest.RespondError(c, http.StatusNotFound, err)
-				return
-			}
-			rest.RespondError(c, http.StatusInternalServerError, err)
-			return
-		}
-
-		rest.RespondJSON(c, http.StatusOK, nil)
-	}
-}

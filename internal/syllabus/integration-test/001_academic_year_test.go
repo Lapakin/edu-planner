@@ -57,13 +57,6 @@ func TestActivateAcademicYear(t *testing.T) {
 		Run(t, ts.URL, ta.DefaultIgnoredFields)
 }
 
-func TestDeactivateAcademicYear(t *testing.T) {
-	ta.NewHTTPCasesRunner("/api/v1/academic-years/{academicYearId}/deactivate", http.MethodPost, adminToken).
-		NewRequestWithoutBody("OK", nil, map[string]any{"academicYearId": ta.AcademicYear1.ID}, http.StatusOK, nil).
-		NewRequestWithoutBody("NotFound", nil, map[string]any{"academicYearId": uint64(0)}, http.StatusNotFound, ta.ExpectedResponseNotFound).
-		Run(t, ts.URL, ta.DefaultIgnoredFields)
-}
-
 func TestDeleteAcademicYears(t *testing.T) {
 	ta.NewHTTPCasesRunner("/api/v1/academic-years/delete", http.MethodPost, adminToken).
 		NewRequestWithBody("OK", []uint64{ta.AcademicYear2.ID}, http.StatusOK, nil).

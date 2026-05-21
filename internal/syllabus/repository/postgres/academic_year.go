@@ -206,29 +206,19 @@ func (r *AcademicYearRepository) ActivateAcademicYear(ctx context.Context, id ui
 	return nil
 }
 
-func (r *AcademicYearRepository) DeactivateAcademicYear(ctx context.Context, id uint64, currentTime time.Time) error {
+func (r *AcademicYearRepository) DeactivateAllAcademicYears(ctx context.Context, currentTime time.Time) error {
 	query, args, err := q.Update(ctx).
 		Table("academic_year").
 		Set("is_active", false).
 		Set("modified_at", currentTime).
-		WhereID(id).
+		Where("is_active = ?", true).
 		ToSQL()
 	if err != nil {
 		return err
 	}
 
-	result, err := r.db.ExecContext(ctx, query, args...)
-	if err != nil {
+	if _, err = r.db.ExecContext(ctx, query, args...); err != nil {
 		return err
-	}
-
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if affected == 0 {
-		return sql.ErrNoRows
 	}
 
 	return nil

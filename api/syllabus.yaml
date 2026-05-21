@@ -201,68 +201,30 @@ paths:
         - Academic Years
       summary: Activate academic year
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AcademicYear'
-        '400':
+                $ref: "#/components/schemas/AcademicYear"
+        "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
-  /academic-years/{academicYearId}/deactivate:
-    parameters:
-      - $ref: '#/components/parameters/Authorization'
-      - name: academicYearId
-        in: path
-        schema:
-          type: integer
-        required: true
-    post:
-      tags:
-        - Academic Years
-      summary: Deactivate academic year
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AcademicYear'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /semesters/{semesterId}:
     parameters:

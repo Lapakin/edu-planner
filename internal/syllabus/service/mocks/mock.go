@@ -71,20 +71,6 @@ func (mr *MockAcademicYearSvcMockRecorder) CreateAcademicYears(ctx, claims, acad
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAcademicYears", reflect.TypeOf((*MockAcademicYearSvc)(nil).CreateAcademicYears), ctx, claims, academicYears)
 }
 
-// DeactivateAcademicYear mocks base method.
-func (m *MockAcademicYearSvc) DeactivateAcademicYear(ctx context.Context, claims *jwt.Claims, id uint64) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeactivateAcademicYear", ctx, claims, id)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeactivateAcademicYear indicates an expected call of DeactivateAcademicYear.
-func (mr *MockAcademicYearSvcMockRecorder) DeactivateAcademicYear(ctx, claims, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeactivateAcademicYear", reflect.TypeOf((*MockAcademicYearSvc)(nil).DeactivateAcademicYear), ctx, claims, id)
-}
-
 // DeleteAcademicYears mocks base method.
 func (m *MockAcademicYearSvc) DeleteAcademicYears(ctx context.Context, claims *jwt.Claims, ids []uint64) error {
 	m.ctrl.T.Helper()
