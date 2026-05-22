@@ -475,21 +475,18 @@ const App = {
     this.currentMgr = null;
     const user = this.state.user;
     main.innerHTML = `
-      <div class="page-header">
-        <h1>${t('pages.homeTitle')}</h1>
-      </div>
       <div class="home-welcome">
         <div class="welcome-card">
           <div class="welcome-icon">
-            <svg style="width:48px;height:48px;color:var(--accent)"><use href="#icon-book"/></svg>
+            <svg style="width:22px;height:22px"><use href="#icon-book"/></svg>
           </div>
           <div>
             <h2>${t('pages.homeWelcome')}, ${user?.email || ''}!</h2>
-            <p style="color:var(--text-muted);margin-top:8px">${t('roles.' + (user?.role || 'user'))}</p>
+            <p>${t('roles.' + (user?.role || 'user'))}</p>
           </div>
         </div>
       </div>
-      <div id="home-active-tpl" style="margin:16px 0"></div>
+      <div id="home-active-tpl"></div>
       <div class="home-cards" id="home-stats"></div>`;
 
     this._renderActiveTemplate(main.querySelector('#home-active-tpl'));
@@ -497,11 +494,11 @@ const App = {
     if (user?.role === 'teacher') return;
 
     const cards = [
-      { i18nKey: 'entities.academicYears', cacheKey: 'academic-years', href: '#/academic-settings/academic-years', icon: 'icon-calendar' },
-      { i18nKey: 'entities.departments',   cacheKey: 'departments',     href: '#/reference/departments',   icon: 'icon-book' },
-      { i18nKey: 'entities.groups',        cacheKey: 'groups',          href: '#/reference/groups',        icon: 'icon-settings' },
-      { i18nKey: 'entities.disciplines',   cacheKey: 'disciplines',     href: '#/reference/disciplines',   icon: 'icon-book' },
-      { i18nKey: 'entities.scheduleTemplates', cacheKey: 'schedule-templates', href: '#/schedule/schedule-templates', icon: 'icon-calendar' },
+      { i18nKey: 'entities.academicYears',    cacheKey: 'academic-years',    href: '#/academic-settings/academic-years', icon: 'icon-calendar', color: 'blue'    },
+      { i18nKey: 'entities.departments',      cacheKey: 'departments',        href: '#/reference/departments',            icon: 'icon-book',     color: 'indigo'  },
+      { i18nKey: 'entities.groups',           cacheKey: 'groups',             href: '#/reference/groups',                icon: 'icon-settings', color: 'sky'     },
+      { i18nKey: 'entities.disciplines',      cacheKey: 'disciplines',        href: '#/reference/disciplines',           icon: 'icon-book',     color: 'emerald' },
+      { i18nKey: 'entities.scheduleTemplates',cacheKey: 'schedule-templates', href: '#/schedule/schedule-templates',     icon: 'icon-calendar', color: 'slate'   },
     ];
 
     const statsEl = document.getElementById('home-stats');
@@ -515,7 +512,9 @@ const App = {
         count = (this.cache[card.cacheKey] || []).length;
       } catch { count = '?'; }
       div.innerHTML = `
-        <svg class="icon stat-icon"><use href="#${card.icon}"/></svg>
+        <div class="stat-icon-wrap ${card.color}">
+          <svg class="stat-icon"><use href="#${card.icon}"/></svg>
+        </div>
         <div class="stat-count">${count}</div>
         <div class="stat-label">${t(card.i18nKey)}</div>`;
       statsEl.appendChild(div);
@@ -527,9 +526,11 @@ const App = {
       const templates = await Api.get('/api/syllabus/schedule-templates');
       const active = (templates || []).find(tmpl => tmpl.is_active);
       if (!active) {
-        container.innerHTML = `<div class="empty-state-hint" style="margin:24px 0;padding:24px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);color:var(--text-muted)">
-          <svg class="icon" style="width:32px;height:32px;margin-bottom:12px;opacity:.4"><use href="#icon-calendar"/></svg>
-          <div>${t('home.noActiveTemplate')}</div>
+        container.innerHTML = `<div class="home-no-template">
+          <div class="home-no-template-icon">
+            <svg style="width:20px;height:20px;color:var(--accent)"><use href="#icon-calendar"/></svg>
+          </div>
+          <p>${t('home.noActiveTemplate')}</p>
         </div>`;
         return;
       }
@@ -1743,42 +1744,52 @@ const App = {
     const scheduleGroups   = groups.filter(g  => scheduleGroupIds.has(g.id));
     const scheduleTeachers = teachers.filter(tc => scheduleTeacherIds.has(tc.id));
 
-    const renderWeek = (weekData, filterMode, filterId) => {
+    const typeLabel = type => {
+      if (type === 'united') return t('schedule.typeUnited');
+      if (type === 'split')  return t('schedule.typeSplit');
+      if (type === 'flow')   return t('schedule.typeFlow');
+      return type;
+    };
+
+    const icnTeacher = `<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/><path d="M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`;
+    const icnGroup   = `<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`;
+    const icnRoom    = `<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+
+    const renderWeek = (weekData, groupFilterId, teacherFilterId) => {
       let rows = '';
       for (const slot of slots) {
         let cells = `<td class="sched-slot"><span class="sched-slot-num">${slot}</span><span class="sched-slot-time">${bellTime(slot)}</span></td>`;
         for (const day of DAYS) {
           let lessons = weekData?.[day]?.[String(slot)] || [];
-          if (filterMode === 'group' && filterId) {
-            lessons = lessons
-              .map(l => ({ ...l, sub_lessons: (l.sub_lessons || []).filter(sl => sl.group_id === filterId) }))
-              .filter(l => l.sub_lessons.length > 0);
-          } else if (filterMode === 'teacher' && filterId) {
-            lessons = lessons
-              .map(l => ({ ...l, sub_lessons: (l.sub_lessons || []).filter(sl => sl.teacher_id === filterId) }))
-              .filter(l => l.sub_lessons.length > 0);
-          }
+          lessons = lessons
+            .map(l => ({
+              ...l,
+              sub_lessons: (l.sub_lessons || []).filter(sl => {
+                if (groupFilterId   && sl.group_id   !== groupFilterId)   return false;
+                if (teacherFilterId && sl.teacher_id !== teacherFilterId) return false;
+                return true;
+              })
+            }))
+            .filter(l => l.sub_lessons.length > 0);
+
           let cellContent = '';
           for (const lesson of lessons) {
             const subj = subjectName(lesson.subject_id);
-            let details = '';
-            for (const sl of (lesson.sub_lessons || [])) {
-              if (filterMode === 'teacher') {
-                details += `<div class="sched-lesson-detail">
-                  <span class="sched-badge sched-group">${groupName(sl.group_id)}</span>
-                  <span class="sched-badge sched-room">${roomName(sl.room_id)}</span>
-                </div>`;
-              } else {
-                details += `<div class="sched-lesson-detail">
-                  <span class="sched-badge sched-group">${groupName(sl.group_id)}</span>
-                  <span class="sched-badge sched-teacher">${teacherName(sl.teacher_id)}</span>
-                  <span class="sched-badge sched-room">${roomName(sl.room_id)}</span>
-                </div>`;
-              }
+            const tLbl = typeLabel(lesson.type);
+            let detailRows = '';
+            for (const sl of lesson.sub_lessons) {
+              detailRows += `<div class="sched-lesson-detail">
+                <div class="sched-detail-row">${icnTeacher}<span>${teacherName(sl.teacher_id)}</span></div>
+                <div class="sched-detail-row">${icnGroup}<span>${groupName(sl.group_id)}</span></div>
+                <div class="sched-detail-row">${icnRoom}<span>Ауд. ${roomName(sl.room_id)}</span></div>
+              </div>`;
             }
             cellContent += `<div class="sched-lesson-card sched-type-${lesson.type}">
-              <div class="sched-lesson-subject">${subj}</div>
-              ${details}
+              <div class="sched-lesson-header">
+                <div class="sched-lesson-subject">${subj}</div>
+                <div class="sched-type-badge sched-type-badge-${lesson.type}">${tLbl}</div>
+              </div>
+              ${detailRows}
             </div>`;
           }
           cells += `<td class="sched-cell">${cellContent}</td>`;
@@ -1808,61 +1819,45 @@ const App = {
           </div>
         </div>
         <div class="filter-bar sched-filter-bar">
-          <div class="filter-field" id="sched-filter-field">
-            <label id="sched-filter-label">${t('schedule.groupFilter')}</label>
-            <select id="sched-filter-select">
+          <div class="filter-field">
+            <label>${t('schedule.groupFilter')}</label>
+            <select id="sched-group-select">
               <option value="">— ${t('schedule.allGroups')} —</option>
               ${groupOptions}
             </select>
           </div>
-          <div class="filter-field sched-toggle-field">
-            <label>${t('schedule.viewModeLabel')}</label>
-            <div class="sched-mode-switch">
-              <span class="sched-mode-label sched-mode-label-active" id="sched-label-group">${t('schedule.groupView')}</span>
-              <button class="sm-toggle" id="sched-mode-toggle" role="switch" aria-checked="false"></button>
-              <span class="sched-mode-label" id="sched-label-teacher">${t('schedule.teacherView')}</span>
-            </div>
+          <div class="filter-field">
+            <label>${t('schedule.teacherFilter')}</label>
+            <select id="sched-teacher-select">
+              <option value="">— ${t('schedule.allTeachers')} —</option>
+              ${teacherOptions}
+            </select>
           </div>
         </div>
         <div id="sched-content"></div>
+        <div class="sched-legend">
+          <span class="sched-legend-item"><span class="sched-legend-dot sched-legend-united"></span>${t('schedule.legendLecture')}</span>
+          <span class="sched-legend-item"><span class="sched-legend-dot sched-legend-split"></span>${t('schedule.legendLab')}</span>
+          <span class="sched-legend-item"><span class="sched-legend-dot sched-legend-flow"></span>${t('schedule.legendFlow')}</span>
+        </div>
       </div>`;
 
-    let filterMode = 'group';
-    const content      = container.querySelector('#sched-content');
-    const activeFilterId = () => Number(container.querySelector('#sched-filter-select').value) || 0;
-    const activeWeek   = () => container.querySelector('.sched-week-btn.active')?.dataset.week || 'numerator';
+    const content        = container.querySelector('#sched-content');
+    const activeGroupId   = () => Number(container.querySelector('#sched-group-select').value)   || 0;
+    const activeTeacherId = () => Number(container.querySelector('#sched-teacher-select').value) || 0;
+    const activeWeek      = () => container.querySelector('.sched-week-btn.active')?.dataset.week || 'numerator';
 
     const showWeek = week => {
-      content.innerHTML = renderWeek(scheduleJson[week] || {}, filterMode, activeFilterId());
+      content.innerHTML = renderWeek(scheduleJson[week] || {}, activeGroupId(), activeTeacherId());
       container.querySelectorAll('.sched-week-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.week === week));
     };
 
-    const modeToggle   = container.querySelector('#sched-mode-toggle');
-    const labelGroup   = container.querySelector('#sched-label-group');
-    const labelTeacher = container.querySelector('#sched-label-teacher');
-    const filterLabel  = container.querySelector('#sched-filter-label');
-    const filterSelect = container.querySelector('#sched-filter-select');
-
-    modeToggle.addEventListener('click', () => {
-      modeToggle.classList.toggle('on');
-      const isTeacher = modeToggle.classList.contains('on');
-      modeToggle.setAttribute('aria-checked', String(isTeacher));
-      filterMode = isTeacher ? 'teacher' : 'group';
-      labelGroup.classList.toggle('sched-mode-label-active', !isTeacher);
-      labelTeacher.classList.toggle('sched-mode-label-active', isTeacher);
-      filterLabel.textContent = isTeacher ? t('schedule.teacherFilter') : t('schedule.groupFilter');
-      filterSelect.innerHTML = isTeacher
-        ? `<option value="">— ${t('schedule.allTeachers')} —</option>${teacherOptions}`
-        : `<option value="">— ${t('schedule.allGroups')} —</option>${groupOptions}`;
-      showWeek(activeWeek());
-    });
-
     container.querySelectorAll('.sched-week-btn').forEach(btn =>
       btn.addEventListener('click', () => showWeek(btn.dataset.week)));
 
-    container.querySelector('#sched-filter-select').addEventListener('change', () =>
-      showWeek(activeWeek()));
+    container.querySelector('#sched-group-select').addEventListener('change', () => showWeek(activeWeek()));
+    container.querySelector('#sched-teacher-select').addEventListener('change', () => showWeek(activeWeek()));
 
     showWeek('numerator');
   },
