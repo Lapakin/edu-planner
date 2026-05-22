@@ -374,8 +374,8 @@ ON CONFLICT DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────
 -- Schedule template settings
--- lessons_per_class = 2 → each scheduled slot = 2 academic periods (90 min)
--- max lessons/day = floor(max_study_hours_per_day / lessons_per_class) = floor(8/2) = 4
+-- lessons_per_class = 3 → each scheduled slot = 3 academic periods (135 min)
+-- max lessons/day = floor(max_study_hours_per_day / lessons_per_class) = floor(9/3) = 3
 -- study_days_mask  = 31 → Mon–Fri (5 days)
 -- ─────────────────────────────────────────────────────────────
 
@@ -388,7 +388,7 @@ INSERT INTO schedule_template_setting (
     created_at
 )
 OVERRIDING SYSTEM VALUE
-VALUES (1, 1, 2, 8, 36, 36, 2, 31, '2025-09-01 00:00:00')
+VALUES (1, 1, 2, 9, 36, 36, 3, 31, '2025-09-01 00:00:00')
 ON CONFLICT (id) DO UPDATE SET
     academic_year_id                = EXCLUDED.academic_year_id,
     max_study_hours_per_day         = EXCLUDED.max_study_hours_per_day,
@@ -400,7 +400,8 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- ─────────────────────────────────────────────────────────────
 -- Schedule restriction
--- min = 1 (allows odd weekly totals that arise from 3h lessons)
+-- min = 2 (each day a group is scheduled must have at least 2 pairs;
+--          all groups have even weekly lesson counts with lessons_per_class=3)
 -- no_gaps = true (fixer pass compresses slots to be consecutive)
 -- max_consecutive = 5 (teacher cannot teach more than 5 pairs in a row)
 -- time_priority = 'morning' (generator prefers early lesson slots)
@@ -415,7 +416,7 @@ INSERT INTO schedule_restriction (
     created_at
 )
 OVERRIDING SYSTEM VALUE
-VALUES (1, 1, 1, 4, 5, TRUE, 5, 'morning', TRUE, '2025-09-01 00:00:00')
+VALUES (1, 1, 2, 4, 5, TRUE, 5, 'morning', TRUE, '2025-09-01 00:00:00')
 ON CONFLICT (id) DO UPDATE SET
     academic_year_id                 = EXCLUDED.academic_year_id,
     min_group_lessons_per_day        = EXCLUDED.min_group_lessons_per_day,
@@ -653,7 +654,7 @@ VALUES
 (8,  4,  3, 'Асистент', 22, '2025-09-01 00:00:00'),  -- 2 год/тиж × 11
 -- ── АтаП: Бричковський (3) гр.12 ───────────────────────────────────
 (9,  5,  3, 'Лектор',   11, '2025-09-01 00:00:00'),
-(10, 5,  3, 'Асистент', 22, '2025-09-01 00:00:00'),
+(10, 5,  3, 'Асистент', 33, '2025-09-01 00:00:00'),  -- bumped 22→33 (3 год/тиж × 11) so group 12 gets 6 lessons/wk (even, required by min=2)
 -- ── ОБДЗ: Радуль (4) лектор; Іваненко (13) лаб гр.1; Коваленко (14) гр.2,3
 (11, 6,  4,  'Лектор',   22, '2025-09-01 00:00:00'),
 (12, 6,  13, 'Асистент', 22, '2025-09-01 00:00:00'),
