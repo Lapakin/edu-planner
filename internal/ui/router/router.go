@@ -17,6 +17,7 @@ func NewRouter(svc *service.Services) *gin.Engine {
 
 	r.GET("/", handler.Index)
 	r.GET("/set-password", handler.SetPassword)
+	r.GET("/reset-password", handler.ResetPassword)
 
 	api := r.Group("/api")
 	api.Any("/auth/*path", handler.AuthProxy(svc))

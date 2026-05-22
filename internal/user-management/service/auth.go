@@ -276,6 +276,136 @@ func (s *authSvc) ResetInvite(ctx context.Context, claims *jwt.Claims, userID ui
 	}, nil
 }
 
+func (s *authSvc) GenerateResetPasswordLink(ctx context.Context, claims *jwt.Claims, userID uint64) (*domain.InviteResp, error) {
+	var err error
+	defer func() {
+		if err != nil {
+			s.l.Errorf("Error during GenerateResetPasswordLink. err: %v", err)
+		}
+	}()
+
+	if !domain.IsPrivileged(claims.Role) {
+		return nil, ErrForbidden
+	}
+
+	user, err := s.rm.NewUserRepo(s.db).GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, handleDBError(err)
+	}
+
+	tx, err := s.db.Begintx(ctx)
+	if err != nil {
+		return nil, ErrInternal
+	}
+	defer tx.Rollback()
+
+	rawToken, err := generateToken()
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	now := time.Now()
+	resetToken := &domain.ResetPasswordToken{
+		ID:        0,
+		UserID:    userID,
+		Token:     rawToken,
+		ExpiresAt: now.Add(inviteTokenTTL),
+		UsedAt:    nil,
+		CreatedAt: now,
+	}
+
+	if err = s.rm.NewAuthRepo(tx).CreateResetPasswordToken(ctx, resetToken); err != nil {
+		return nil, handleDBError(err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, ErrInternal
+	}
+
+	return &domain.InviteResp{
+		User:       user,
+		InviteLink: "/reset-password?token=" + rawToken,
+	}, nil
+}
+
+func (s *authSvc) ResetPassword(ctx context.Context, token string, password string) (string, error) {
+	var err error
+	defer func() {
+		if err != nil {
+			s.l.Errorf("Error during ResetPassword. err: %v", err)
+		}
+	}()
+
+	tx, err := s.db.Begintx(ctx)
+	if err != nil {
+		return "", ErrInternal
+	}
+	defer tx.Rollback()
+
+	resetToken, err := s.rm.NewAuthRepo(tx).GetResetPasswordToken(ctx, token)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrInviteTokenInvalid
+			return "", err
+		}
+		return "", ErrInternal
+	}
+
+	if resetToken.UsedAt != nil || time.Now().After(resetToken.ExpiresAt) {
+		err = ErrInviteTokenInvalid
+		return "", err
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", ErrInternal
+	}
+
+	now := time.Now()
+	cred := &domain.UserCredential{
+		UserID:       resetToken.UserID,
+		PasswordHash: string(hashedPassword),
+		UpdatedAt:    now,
+		User:         nil,
+	}
+
+	if err = s.rm.NewAuthRepo(tx).UpsertUserCredential(ctx, cred); err != nil {
+		return "", handleDBError(err)
+	}
+
+	if err = s.rm.NewAuthRepo(tx).MarkResetPasswordTokenUsed(ctx, token, now); err != nil {
+		return "", handleDBError(err)
+	}
+
+	user, err := s.rm.NewUserRepo(tx).GetUserByID(ctx, resetToken.UserID)
+	if err != nil {
+		return "", handleDBError(err)
+	}
+
+	tokenString, err := jwt.GenerateToken(int64(user.ID), user.Email, user.Role)
+	if err != nil {
+		return "", ErrInternal
+	}
+
+	refreshToken := &domain.RefreshToken{
+		ID:        0,
+		UserID:    user.ID,
+		TokenHash: tokenString,
+		ExpiresAt: now.Add(24 * time.Hour),
+		IsRevoked: false,
+		CreatedAt: now,
+	}
+	if err = s.rm.NewAuthRepo(tx).CreateRefreshToken(ctx, refreshToken); err != nil {
+		return "", handleDBError(err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return "", ErrInternal
+	}
+
+	return tokenString, nil
+}
+
 func (s *authSvc) Login(ctx context.Context, email string, password string) (string, error) {
 	var err error
 	defer func() {

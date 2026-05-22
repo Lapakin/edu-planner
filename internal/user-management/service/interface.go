@@ -29,6 +29,8 @@ type AuthSvc interface {
 	CreateInvite(ctx context.Context, claims *jwt.Claims, req domain.InviteReq) (*domain.InviteResp, error)
 	SetPassword(ctx context.Context, token string, password string) (string, error)
 	ResetInvite(ctx context.Context, claims *jwt.Claims, userID uint64) (*domain.InviteResp, error)
+	GenerateResetPasswordLink(ctx context.Context, claims *jwt.Claims, userID uint64) (*domain.InviteResp, error)
+	ResetPassword(ctx context.Context, token string, password string) (string, error)
 	Login(ctx context.Context, email string, password string) (string, error)
 }
 

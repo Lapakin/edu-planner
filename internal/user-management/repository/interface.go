@@ -44,6 +44,9 @@ type AuthRepository interface {
 	CreateInviteToken(ctx context.Context, token *domain.InviteToken) error
 	GetInviteToken(ctx context.Context, token string) (*domain.InviteToken, error)
 	MarkInviteTokenUsed(ctx context.Context, token string, usedAt time.Time) error
+	CreateResetPasswordToken(ctx context.Context, token *domain.ResetPasswordToken) error
+	GetResetPasswordToken(ctx context.Context, token string) (*domain.ResetPasswordToken, error)
+	MarkResetPasswordTokenUsed(ctx context.Context, token string, usedAt time.Time) error
 }
 
 type AcademicYearRepository interface {

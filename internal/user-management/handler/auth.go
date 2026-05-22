@@ -121,6 +121,72 @@ func NewResetInviteHandler(svc service.AuthSvc) gin.HandlerFunc {
 	}
 }
 
+func NewGenerateResetPasswordLinkHandler(svc service.AuthSvc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims, err := jwt.ExtractClaims(c.GetHeader(jwt.AuthHeader))
+		if err != nil {
+			rest.RespondError(c, http.StatusUnauthorized, jwt.ErrInvalidToken)
+			return
+		}
+
+		userID, err := utils.StringToUint64(c.Param("userId"))
+		if err != nil {
+			rest.RespondError(c, http.StatusBadRequest, rest.ErrConvID)
+			return
+		}
+
+		resp, err := svc.GenerateResetPasswordLink(c.Request.Context(), claims, userID)
+		if err != nil {
+			if errors.Is(err, service.ErrForbidden) {
+				rest.RespondError(c, http.StatusForbidden, err)
+				return
+			}
+			if errors.Is(err, service.ErrNotFound) {
+				rest.RespondError(c, http.StatusNotFound, err)
+				return
+			}
+			rest.RespondError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		rest.RespondJSON(c, http.StatusOK, resp)
+	}
+}
+
+func NewResetPasswordHandler(svc service.AuthSvc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			rest.RespondError(c, http.StatusBadRequest, rest.ErrRequestBodyReading)
+			return
+		}
+		defer c.Request.Body.Close()
+
+		var req domain.ResetPasswordReq
+		if err = json.Unmarshal(body, &req); err != nil {
+			rest.RespondError(c, http.StatusBadRequest, rest.ErrUnmarshal)
+			return
+		}
+
+		if req.Token == "" || req.Password == "" {
+			rest.RespondError(c, http.StatusBadRequest, rest.ErrEmptyBody)
+			return
+		}
+
+		token, err := svc.ResetPassword(c.Request.Context(), req.Token, req.Password)
+		if err != nil {
+			if errors.Is(err, service.ErrInviteTokenInvalid) {
+				rest.RespondError(c, http.StatusGone, err)
+				return
+			}
+			rest.RespondError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		rest.RespondJSON(c, http.StatusOK, gin.H{"token": token})
+	}
+}
+
 func NewLoginHandler(svc service.AuthSvc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body, err := io.ReadAll(c.Request.Body)

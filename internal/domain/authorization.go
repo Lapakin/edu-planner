@@ -40,7 +40,21 @@ type InviteResp struct {
 	InviteLink string `json:"invite_link"`
 }
 
+type ResetPasswordToken struct {
+	ID        uint64     `db:"id"`
+	UserID    uint64     `db:"user_id"`
+	Token     string     `db:"token"`
+	ExpiresAt time.Time  `db:"expires_at"`
+	UsedAt    *time.Time `db:"used_at"`
+	CreatedAt time.Time  `db:"created_at"`
+}
+
 type SetPasswordReq struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
+}
+
+type ResetPasswordReq struct {
 	Token    string `json:"token"`
 	Password string `json:"password"`
 }

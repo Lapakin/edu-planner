@@ -427,6 +427,26 @@ const App = {
     } catch (e) { Toast.error(e.message); }
   },
 
+  async resetUserPassword(row) {
+    try {
+      const resp = await Api.post(`/api/auth/users/${row.id}/generate-reset-password-link`, null);
+      const inviteLink = window.location.origin + (resp?.invite_link || '');
+      const body = document.createElement('div');
+      body.innerHTML = `
+        <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:12px">${t('users.inviteLinkHint')}</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="reset-link-input" readonly value="${inviteLink}" style="flex:1;background:var(--bg-secondary,#f8fafc)">
+          <button class="btn btn-secondary btn-sm" id="reset-copy-btn">${t('actions.copy')}</button>
+        </div>`;
+      const foot = document.createElement('div');
+      foot.innerHTML = `<button class="btn btn-primary" onclick="closeModal()">${t('actions.close')}</button>`;
+      openModal(t('users.inviteLink').replace(':', ''), body, foot);
+      body.querySelector('#reset-copy-btn').addEventListener('click', () => {
+        navigator.clipboard.writeText(inviteLink).then(() => Toast.info(t('messages.copied')));
+      });
+    } catch (e) { Toast.error(e.message); }
+  },
+
   async toggleUser(row, mgr) {
     const activating = !row.is_active;
     const path = `/api/auth/users/${row.id}/${activating ? 'activate' : 'deactivate'}`;

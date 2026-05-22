@@ -403,6 +403,13 @@ var (
 		CreatedAt: CurrentTime,
 	}
 
+	ResetPasswordToken1 = &domain.ResetPasswordToken{
+		UserID:    1,
+		Token:     "test_reset_password_token_1",
+		ExpiresAt: time.Now().Add(72 * time.Hour),
+		CreatedAt: CurrentTime,
+	}
+
 	ExpectedInviteResp1 = &domain.InviteResp{
 		User: &domain.User{
 			Email:     InviteReq1.Email,
@@ -423,6 +430,16 @@ var (
 	}
 
 	ExpectedResetInviteResp1 = &domain.InviteResp{
+		User: &domain.User{
+			Email:     User1.Email,
+			Role:      User1.Role,
+			FirstName: "x",
+			LastName:  "x",
+		},
+		InviteLink: "x",
+	}
+
+	ExpectedResetPasswordLinkResp1 = &domain.InviteResp{
 		User: &domain.User{
 			Email:     User1.Email,
 			Role:      User1.Role,

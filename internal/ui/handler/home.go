@@ -14,3 +14,8 @@ func SetPassword(c *gin.Context) {
 	token := c.Query("token")
 	c.HTML(http.StatusOK, "set-password.html", gin.H{"token": token})
 }
+
+func ResetPassword(c *gin.Context) {
+	token := c.Query("token")
+	c.HTML(http.StatusOK, "reset-password.html", gin.H{"token": token})
+}

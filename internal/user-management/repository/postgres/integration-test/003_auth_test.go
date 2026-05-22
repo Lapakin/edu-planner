@@ -221,3 +221,71 @@ func TestMarkInviteTokenUsed(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateResetPasswordToken(t *testing.T) {
+	repo := postgres.NewAuthRepository(db)
+	ctx := context.Background()
+
+	testCases := []struct {
+		name          string
+		input         *domain.ResetPasswordToken
+		expectedError error
+	}{
+		{
+			name:          "OK",
+			input:         ta.ResetPasswordToken1,
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := repo.CreateResetPasswordToken(ctx, tc.input)
+			assert.Equal(t, tc.expectedError, err)
+		})
+	}
+}
+
+func TestGetResetPasswordToken(t *testing.T) {
+	repo := postgres.NewAuthRepository(db)
+	ctx := context.Background()
+
+	t.Run("OK", func(t *testing.T) {
+		output, err := repo.GetResetPasswordToken(ctx, ta.ResetPasswordToken1.Token)
+		require.NoError(t, err)
+		require.NotNil(t, output)
+		assert.Equal(t, ta.ResetPasswordToken1.UserID, output.UserID)
+		assert.Equal(t, ta.ResetPasswordToken1.Token, output.Token)
+		assert.Nil(t, output.UsedAt)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		output, err := repo.GetResetPasswordToken(ctx, "nonexistent_token")
+		assert.Equal(t, sql.ErrNoRows, err)
+		assert.Nil(t, output)
+	})
+}
+
+func TestMarkResetPasswordTokenUsed(t *testing.T) {
+	repo := postgres.NewAuthRepository(db)
+	ctx := context.Background()
+
+	testCases := []struct {
+		name          string
+		token         string
+		expectedError error
+	}{
+		{
+			name:          "OK",
+			token:         ta.ResetPasswordToken1.Token,
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := repo.MarkResetPasswordTokenUsed(ctx, tc.token, ta.CurrentTime)
+			assert.Equal(t, tc.expectedError, err)
+		})
+	}
+}

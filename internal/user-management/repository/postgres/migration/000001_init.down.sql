@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS reset_password_token;
 DROP TABLE IF EXISTS invite_token;
 DROP TABLE IF EXISTS academic_year_info;
 DROP TABLE IF EXISTS refresh_token;

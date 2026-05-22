@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -109,6 +110,82 @@ func TestResetInvite(t *testing.T) {
 	ta.NewHTTPCasesRunner("/api/v1/users/1/reset-invite", http.MethodPost, adminToken).
 		NewBadJWTRequest().
 		Run(t, ts.URL, []string{})
+}
+
+func TestGenerateResetPasswordLink(t *testing.T) {
+	ta.NewHTTPCasesRunner("/api/v1/users/1/generate-reset-password-link", http.MethodPost, adminToken).
+		NewRequestWithBody("OK", nil, http.StatusOK, ta.ExpectedResetPasswordLinkResp1).
+		Run(t, ts.URL, []string{"created_at", "modified_at", "id", "invite_link", "is_active", "is_deleted", "patronymic", "first_name", "last_name", "email"})
+
+	ta.NewHTTPCasesRunner("/api/v1/users/1/generate-reset-password-link", http.MethodPost, deanToken).
+		NewRequestWithBody("DeanAccess", nil, http.StatusOK, ta.ExpectedResetPasswordLinkResp1).
+		Run(t, ts.URL, []string{"created_at", "modified_at", "id", "invite_link", "is_active", "is_deleted", "patronymic", "first_name", "last_name", "email"})
+
+	ta.NewHTTPCasesRunner("/api/v1/users/1/generate-reset-password-link", http.MethodPost, teacherToken).
+		NewRequestWithBody("NoAccess", nil, http.StatusForbidden, ta.ExpectedResponseHaveNoAccess).
+		Run(t, ts.URL, []string{})
+
+	ta.NewHTTPCasesRunner("/api/v1/users/0/generate-reset-password-link", http.MethodPost, adminToken).
+		NewRequestWithBody("NotFound", nil, http.StatusNotFound, ta.ExpectedResponseNotFound).
+		Run(t, ts.URL, []string{})
+
+	ta.NewHTTPCasesRunner("/api/v1/users/1/generate-reset-password-link", http.MethodPost, adminToken).
+		NewBadJWTRequest().
+		Run(t, ts.URL, []string{})
+}
+
+var capturedResetPasswordToken string
+
+func TestResetPassword(t *testing.T) {
+	ta.NewHTTPCasesRunner("/api/v1/reset-password", http.MethodPost, ta.EmptyToken).
+		NewRequestWithBody("InvalidToken",
+			&domain.ResetPasswordReq{Token: "nonexistent-token", Password: "pass123"},
+			http.StatusGone,
+			map[string]any{"error": "invite link is invalid or has already been used"},
+		).
+		NewUnmarshalErrorRequest().
+		Run(t, ts.URL, []string{})
+
+	capturedResetPasswordToken = generateResetPasswordLinkAndExtractToken(t, 1)
+	require.NotEmpty(t, capturedResetPasswordToken, "capturedResetPasswordToken must be set")
+
+	ta.NewHTTPCasesRunner("/api/v1/reset-password", http.MethodPost, ta.EmptyToken).
+		NewRequestWithBody("OK",
+			&domain.ResetPasswordReq{Token: capturedResetPasswordToken, Password: "newpass456"},
+			http.StatusOK,
+			ta.ExpectedTokenResp,
+		).
+		Run(t, ts.URL, []string{"token"})
+
+	ta.NewHTTPCasesRunner("/api/v1/reset-password", http.MethodPost, ta.EmptyToken).
+		NewRequestWithBody("UsedToken",
+			&domain.ResetPasswordReq{Token: capturedResetPasswordToken, Password: "newpass456"},
+			http.StatusGone,
+			map[string]any{"error": "invite link is invalid or has already been used"},
+		).
+		Run(t, ts.URL, []string{})
+}
+
+// generateResetPasswordLinkAndExtractToken calls the admin endpoint and returns the raw token.
+func generateResetPasswordLinkAndExtractToken(t *testing.T, userID int) string {
+	t.Helper()
+
+	httpReq, err := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/users/"+strconv.Itoa(userID)+"/generate-reset-password-link", nil)
+	require.NoError(t, err)
+	httpReq.Header.Set("Authorization", adminToken)
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	respBytes, _ := io.ReadAll(resp.Body)
+	var inviteResp domain.InviteResp
+	require.NoError(t, json.Unmarshal(respBytes, &inviteResp))
+
+	parts := strings.SplitN(inviteResp.InviteLink, "token=", 2)
+	require.Len(t, parts, 2, "invite_link must contain 'token='")
+	return parts[1]
 }
 
 // createInviteAndExtractToken is a helper that performs the full invite HTTP call and returns the token.

@@ -182,6 +182,21 @@ func (mr *MockAuthSvcMockRecorder) CreateInvite(ctx, claims, req any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInvite", reflect.TypeOf((*MockAuthSvc)(nil).CreateInvite), ctx, claims, req)
 }
 
+// GenerateResetPasswordLink mocks base method.
+func (m *MockAuthSvc) GenerateResetPasswordLink(ctx context.Context, claims *jwt.Claims, userID uint64) (*domain.InviteResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateResetPasswordLink", ctx, claims, userID)
+	ret0, _ := ret[0].(*domain.InviteResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateResetPasswordLink indicates an expected call of GenerateResetPasswordLink.
+func (mr *MockAuthSvcMockRecorder) GenerateResetPasswordLink(ctx, claims, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateResetPasswordLink", reflect.TypeOf((*MockAuthSvc)(nil).GenerateResetPasswordLink), ctx, claims, userID)
+}
+
 // Login mocks base method.
 func (m *MockAuthSvc) Login(ctx context.Context, email, password string) (string, error) {
 	m.ctrl.T.Helper()
@@ -210,6 +225,21 @@ func (m *MockAuthSvc) ResetInvite(ctx context.Context, claims *jwt.Claims, userI
 func (mr *MockAuthSvcMockRecorder) ResetInvite(ctx, claims, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetInvite", reflect.TypeOf((*MockAuthSvc)(nil).ResetInvite), ctx, claims, userID)
+}
+
+// ResetPassword mocks base method.
+func (m *MockAuthSvc) ResetPassword(ctx context.Context, token, password string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetPassword", ctx, token, password)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResetPassword indicates an expected call of ResetPassword.
+func (mr *MockAuthSvcMockRecorder) ResetPassword(ctx, token, password any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockAuthSvc)(nil).ResetPassword), ctx, token, password)
 }
 
 // SetPassword mocks base method.

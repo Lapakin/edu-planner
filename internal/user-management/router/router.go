@@ -17,6 +17,7 @@ func NewRouter(svc *service.Services) *gin.Engine {
 	apiV1 := r.Group("/api/v1")
 	apiV1.Handle(http.MethodPost, "/login", handler.NewLoginHandler(svc.AuthSvc))
 	apiV1.Handle(http.MethodPost, "/set-password", handler.NewSetPasswordHandler(svc.AuthSvc))
+	apiV1.Handle(http.MethodPost, "/reset-password", handler.NewResetPasswordHandler(svc.AuthSvc))
 
 	protected := apiV1.Group("/")
 	protected.Use(middleware.JWTMiddleware())
@@ -31,6 +32,7 @@ func NewRouter(svc *service.Services) *gin.Engine {
 	protected.Handle(http.MethodPost, "/users/:userId/activate", handler.NewActivateUserHandler(svc.UserSvc))
 	protected.Handle(http.MethodPost, "/users/:userId/deactivate", handler.NewDeactivateUserHandler(svc.UserSvc))
 	protected.Handle(http.MethodPost, "/users/:userId/reset-invite", handler.NewResetInviteHandler(svc.AuthSvc))
+	protected.Handle(http.MethodPost, "/users/:userId/generate-reset-password-link", handler.NewGenerateResetPasswordLinkHandler(svc.AuthSvc))
 
 	r.HEAD("/health", func(c *gin.Context) {
 		c.Status(http.StatusOK)

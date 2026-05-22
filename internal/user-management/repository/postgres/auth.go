@@ -237,3 +237,73 @@ func (r *AuthRepository) MarkInviteTokenUsed(ctx context.Context, token string, 
 
 	return nil
 }
+
+func (r *AuthRepository) CreateResetPasswordToken(ctx context.Context, token *domain.ResetPasswordToken) error {
+	query, args, err := q.Insert(ctx).
+		Into(`"reset_password_token"`).
+		Columns(`
+			user_id,
+			token,
+			expires_at,
+			created_at
+		`).
+		Values(
+			token.UserID,
+			token.Token,
+			token.ExpiresAt,
+			token.CreatedAt,
+		).
+		Returning("id").
+		ToSQL()
+	if err != nil {
+		return err
+	}
+
+	if err = r.db.QueryRowxContext(ctx, query, args...).Scan(&token.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *AuthRepository) GetResetPasswordToken(ctx context.Context, token string) (*domain.ResetPasswordToken, error) {
+	query, args, err := q.Select(ctx).
+		Columns(`
+			id,
+			user_id,
+			token,
+			expires_at,
+			used_at,
+			created_at
+		`).
+		From(`"reset_password_token"`).
+		Where("token = ?", token).
+		ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	rt := &domain.ResetPasswordToken{}
+	if err = sqlx.GetContext(ctx, r.db, rt, query, args...); err != nil {
+		return nil, err
+	}
+
+	return rt, nil
+}
+
+func (r *AuthRepository) MarkResetPasswordTokenUsed(ctx context.Context, token string, usedAt time.Time) error {
+	query, args, err := q.Update(ctx).
+		Table(`"reset_password_token"`).
+		Set("used_at", usedAt).
+		Where("token = ?", token).
+		ToSQL()
+	if err != nil {
+		return err
+	}
+
+	if _, err = r.db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -91,6 +91,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Reset password using reset-password token (no auth required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordReq'
+      responses:
+        '200':
+          description: Password reset, JWT returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: Reset link expired or already used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /login:
     post:
       tags:
@@ -345,6 +385,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /users/{userId}/generate-reset-password-link:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - Auth
+      summary: Generate reset-password link for an existing user (admin only)
+      responses:
+        '200':
+          description: Reset-password link generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteResp'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /users/{userId}/reset-invite:
     parameters:
       - $ref: '#/components/parameters/Authorization'
@@ -480,6 +564,18 @@ components:
           example: /set-password?token=abc123
 
     SetPasswordReq:
+      type: object
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          format: password
+      required:
+        - token
+        - password
+
+    ResetPasswordReq:
       type: object
       properties:
         token:

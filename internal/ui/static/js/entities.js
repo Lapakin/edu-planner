@@ -315,7 +315,7 @@ const ENTITY_CONFIGS = {
       {
         labelFn: (row) => row.is_active ? t('users.resetPassword') : t('users.resetInvite'),
         classFn: () => App.state.user?.role !== 'admin' ? 'hidden' : 'btn btn-sm btn-secondary',
-        handler: (row) => App.resetUserInvite(row),
+        handler: (row) => row.is_active ? App.resetUserPassword(row) : App.resetUserInvite(row),
       },
     ],
   },

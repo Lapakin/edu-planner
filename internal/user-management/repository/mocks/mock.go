@@ -343,6 +343,20 @@ func (mr *MockAuthRepositoryMockRecorder) CreateRefreshToken(ctx, token any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRefreshToken", reflect.TypeOf((*MockAuthRepository)(nil).CreateRefreshToken), ctx, token)
 }
 
+// CreateResetPasswordToken mocks base method.
+func (m *MockAuthRepository) CreateResetPasswordToken(ctx context.Context, token *domain.ResetPasswordToken) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateResetPasswordToken", ctx, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateResetPasswordToken indicates an expected call of CreateResetPasswordToken.
+func (mr *MockAuthRepositoryMockRecorder) CreateResetPasswordToken(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResetPasswordToken", reflect.TypeOf((*MockAuthRepository)(nil).CreateResetPasswordToken), ctx, token)
+}
+
 // CreateUserCredential mocks base method.
 func (m *MockAuthRepository) CreateUserCredential(ctx context.Context, cred *domain.UserCredential) error {
 	m.ctrl.T.Helper()
@@ -387,6 +401,21 @@ func (mr *MockAuthRepositoryMockRecorder) GetRefreshToken(ctx, tokenHash any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRefreshToken", reflect.TypeOf((*MockAuthRepository)(nil).GetRefreshToken), ctx, tokenHash)
 }
 
+// GetResetPasswordToken mocks base method.
+func (m *MockAuthRepository) GetResetPasswordToken(ctx context.Context, token string) (*domain.ResetPasswordToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResetPasswordToken", ctx, token)
+	ret0, _ := ret[0].(*domain.ResetPasswordToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResetPasswordToken indicates an expected call of GetResetPasswordToken.
+func (mr *MockAuthRepositoryMockRecorder) GetResetPasswordToken(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResetPasswordToken", reflect.TypeOf((*MockAuthRepository)(nil).GetResetPasswordToken), ctx, token)
+}
+
 // GetUserCredentialByEmail mocks base method.
 func (m *MockAuthRepository) GetUserCredentialByEmail(ctx context.Context, email string) (*domain.UserCredential, error) {
 	m.ctrl.T.Helper()
@@ -414,6 +443,20 @@ func (m *MockAuthRepository) MarkInviteTokenUsed(ctx context.Context, token stri
 func (mr *MockAuthRepositoryMockRecorder) MarkInviteTokenUsed(ctx, token, usedAt any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkInviteTokenUsed", reflect.TypeOf((*MockAuthRepository)(nil).MarkInviteTokenUsed), ctx, token, usedAt)
+}
+
+// MarkResetPasswordTokenUsed mocks base method.
+func (m *MockAuthRepository) MarkResetPasswordTokenUsed(ctx context.Context, token string, usedAt time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkResetPasswordTokenUsed", ctx, token, usedAt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkResetPasswordTokenUsed indicates an expected call of MarkResetPasswordTokenUsed.
+func (mr *MockAuthRepositoryMockRecorder) MarkResetPasswordTokenUsed(ctx, token, usedAt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkResetPasswordTokenUsed", reflect.TypeOf((*MockAuthRepository)(nil).MarkResetPasswordTokenUsed), ctx, token, usedAt)
 }
 
 // RevokeRefreshToken mocks base method.
