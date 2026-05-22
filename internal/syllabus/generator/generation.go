@@ -241,6 +241,7 @@ func (g *generation) convertLesson(l *lesson) *domain.ScheduleLesson {
 	return &domain.ScheduleLesson{
 		Type:       lessonType,
 		SubjectID:  l.subjectID,
+		IsLab:      l.isLab,
 		SubLessons: subLessons,
 	}
 }

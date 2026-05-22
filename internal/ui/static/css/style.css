@@ -2605,6 +2605,14 @@ td.sched-cell:not(:has(.sched-lesson-card)) {
   border-left-color: #8b5cf6;
 }
 
+.sched-type-lecture {
+  border-left-color: #3b82f6;
+}
+
+.sched-type-lab {
+  border-left-color: #10b981;
+}
+
 /* Card header: subject + type badge */
 .sched-lesson-header {
   display: flex;
@@ -2646,6 +2654,16 @@ td.sched-cell:not(:has(.sched-lesson-card)) {
 .sched-type-badge-flow {
   background: #f5f3ff;
   color: #5b21b6;
+}
+
+.sched-type-badge-lecture {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.sched-type-badge-lab {
+  background: #ecfdf5;
+  color: #065f46;
 }
 
 /* Sub-lesson detail block */

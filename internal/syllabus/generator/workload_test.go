@@ -209,11 +209,12 @@ func TestBuildWorkloadsFromDomain_SkipsDistributionWithNoStudyPlan(t *testing.T)
 	}
 }
 
-func TestBuildWorkloadsFromDomain_SkipsZeroClassroomHours(t *testing.T) {
+func TestBuildWorkloadsFromDomain_SkipsZeroAllHours(t *testing.T) {
 	disciplineID := uint64(10)
 	classroomWork := 0
+	labHours := 0
 	dist := domain.WorkloadDistributions{
-		{ID: 1, StudyPlanID: 1, GroupID: 1, ClassroomWork: &classroomWork},
+		{ID: 1, StudyPlanID: 1, GroupID: 1, ClassroomWork: &classroomWork, Laboratory: &labHours},
 	}
 	assignments := domain.WorkloadAssignments{
 		{ID: 1, WorkloadDistributionID: 1, TeacherID: 1},
@@ -225,7 +226,78 @@ func TestBuildWorkloadsFromDomain_SkipsZeroClassroomHours(t *testing.T) {
 
 	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups, nil)
 	if len(result) != 0 {
-		t.Errorf("expected 0 workloads for zero classroom hours, got %d", len(result))
+		t.Errorf("expected 0 workloads when all hours are zero, got %d", len(result))
+	}
+}
+
+func TestBuildWorkloadsFromDomain_LabHoursWithNoClassroomWork(t *testing.T) {
+	disciplineID := uint64(10)
+	classroomWork := 0
+	labHours := 20
+	roleType := "Лаборант"
+	dist := domain.WorkloadDistributions{
+		{ID: 1, StudyPlanID: 1, GroupID: 1, ClassroomWork: &classroomWork, Laboratory: &labHours},
+	}
+	assignments := domain.WorkloadAssignments{
+		{ID: 1, WorkloadDistributionID: 1, TeacherID: 5, RoleType: &roleType},
+	}
+	studyPlans := domain.StudyPlans{
+		{ID: 1, DisciplineID: &disciplineID},
+	}
+	groups := domain.Groups{{ID: 1}}
+
+	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups, nil)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 lab workload, got %d", len(result))
+	}
+	if !result[0].isLab {
+		t.Error("expected isLab=true for lab teacher")
+	}
+	if result[0].totalHours != 20 {
+		t.Errorf("expected totalHours=20, got %d", result[0].totalHours)
+	}
+}
+
+func TestBuildWorkloadsFromDomain_SplitsHoursByRoleWhenAssignedHoursNil(t *testing.T) {
+	disciplineID := uint64(10)
+	classroomWork := 60
+	labHours := 20
+	lecturerRole := "Лектор"
+	labRole := "Лаборант"
+	dist := domain.WorkloadDistributions{
+		{ID: 1, StudyPlanID: 1, GroupID: 1, ClassroomWork: &classroomWork, Laboratory: &labHours},
+	}
+	assignments := domain.WorkloadAssignments{
+		{ID: 1, WorkloadDistributionID: 1, TeacherID: 1, RoleType: &lecturerRole},
+		{ID: 2, WorkloadDistributionID: 1, TeacherID: 2, RoleType: &labRole},
+	}
+	studyPlans := domain.StudyPlans{
+		{ID: 1, DisciplineID: &disciplineID},
+	}
+	groups := domain.Groups{{ID: 1}}
+
+	result := buildWorkloadsFromDomain(dist, assignments, studyPlans, groups, nil)
+	if len(result) != 2 {
+		t.Fatalf("expected 2 workloads, got %d", len(result))
+	}
+
+	var lecturer, lab *Workload
+	for _, w := range result {
+		if w.isLab {
+			lab = w
+		} else {
+			lecturer = w
+		}
+	}
+
+	if lecturer == nil || lab == nil {
+		t.Fatal("expected one lecturer workload and one lab workload")
+	}
+	if lecturer.totalHours != 40 {
+		t.Errorf("lecturer: expected 40 hours (60-20), got %d", lecturer.totalHours)
+	}
+	if lab.totalHours != 20 {
+		t.Errorf("lab: expected 20 hours, got %d", lab.totalHours)
 	}
 }
 

@@ -1744,11 +1744,9 @@ const App = {
     const scheduleGroups   = groups.filter(g  => scheduleGroupIds.has(g.id));
     const scheduleTeachers = teachers.filter(tc => scheduleTeacherIds.has(tc.id));
 
-    const typeLabel = type => {
-      if (type === 'united') return t('schedule.typeUnited');
-      if (type === 'split')  return t('schedule.typeSplit');
-      if (type === 'flow')   return t('schedule.typeFlow');
-      return type;
+    const typeLabel = (lesson) => {
+      if (lesson.type === 'flow') return t('schedule.typeFlow');
+      return lesson.is_lab ? t('schedule.typeLab') : t('schedule.typeLecture');
     };
 
     const icnTeacher = `<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/><path d="M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`;
@@ -1775,7 +1773,8 @@ const App = {
           let cellContent = '';
           for (const lesson of lessons) {
             const subj = subjectName(lesson.subject_id);
-            const tLbl = typeLabel(lesson.type);
+            const tLbl = typeLabel(lesson);
+            const classKey = lesson.type === 'flow' ? 'flow' : (lesson.is_lab ? 'lab' : 'lecture');
             let detailRows = '';
             for (const sl of lesson.sub_lessons) {
               detailRows += `<div class="sched-lesson-detail">
@@ -1784,10 +1783,10 @@ const App = {
                 <div class="sched-detail-row">${icnRoom}<span>Ауд. ${roomName(sl.room_id)}</span></div>
               </div>`;
             }
-            cellContent += `<div class="sched-lesson-card sched-type-${lesson.type}">
+            cellContent += `<div class="sched-lesson-card sched-type-${classKey}">
               <div class="sched-lesson-header">
                 <div class="sched-lesson-subject">${subj}</div>
-                <div class="sched-type-badge sched-type-badge-${lesson.type}">${tLbl}</div>
+                <div class="sched-type-badge sched-type-badge-${classKey}">${tLbl}</div>
               </div>
               ${detailRows}
             </div>`;
