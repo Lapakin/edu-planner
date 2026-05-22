@@ -162,9 +162,9 @@ CREATE TABLE IF NOT EXISTS education_group_semester
 CREATE TABLE study_plan
 (
     id                    BIGSERIAL PRIMARY KEY,
-    academic_year_id      BIGINT,
-    specialty_id          BIGINT,
-    discipline_id         BIGINT,
+    academic_year_id      BIGINT    REFERENCES academic_year (id),
+    specialty_id          BIGINT    REFERENCES specialty (id),
+    discipline_id         BIGINT    REFERENCES discipline (id),
     semester_number       INT,
     educational_component VARCHAR,
     okr                   INT,
@@ -190,7 +190,7 @@ CREATE TABLE study_plan
 CREATE TABLE IF NOT EXISTS schedule_template
 (
     id          bigserial PRIMARY KEY,
-    semester_id bigint,
+    semester_id bigint    REFERENCES semester (id),
     name        varchar,
     data        jsonb,
     is_active   bool,
@@ -198,36 +198,12 @@ CREATE TABLE IF NOT EXISTS schedule_template
     modified_at timestamp,
     is_deleted  bool
 );
-CREATE TABLE IF NOT EXISTS event
-(
-    id                   bigserial PRIMARY KEY,
-    chain_id             uuid,
-    schedule_template_id bigint,
-    discipline_id        bigint,
-    teacher_id           bigint,
-    group_id             bigint,
-    room_id              bigint,
-    lesson_number        int,
-    subgroup_number      int,
-    created_at           timestamp,
-    modified_at          timestamp,
-    is_deleted           bool
-);
-CREATE TABLE IF NOT EXISTS event_rrule
-(
-    id           bigserial PRIMARY KEY,
-    event_id     bigint,
-    rrule_string varchar,
-    valid_from   date,
-    valid_until  date,
-    created_at   timestamp,
-    modified_at  timestamp
-);
+
 CREATE TABLE IF NOT EXISTS workload_distribution
 (
     id                   bigserial PRIMARY KEY,
-    study_plan_id        bigint,
-    group_id             bigint,
+    study_plan_id        bigint    REFERENCES study_plan (id),
+    group_id             bigint    REFERENCES education_group (id),
     coursework_type      varchar,
     coursework_hours     int,
     classroom_coursework int,
@@ -245,35 +221,76 @@ CREATE TABLE IF NOT EXISTS workload_distribution
     modified_at          timestamp,
     is_deleted           bool NOT NULL DEFAULT FALSE
 );
+
 CREATE TABLE IF NOT EXISTS workload_assignment
 (
     id                       bigserial PRIMARY KEY,
-    workload_distribution_id bigint NOT NULL,
-    teacher_id               bigint NOT NULL,
+    workload_distribution_id bigint    NOT NULL REFERENCES workload_distribution (id),
+    teacher_id               bigint    NOT NULL REFERENCES teacher (id),
     role_type                varchar,
     assigned_hours           int,
     created_at               timestamp
 );
+
 CREATE TABLE IF NOT EXISTS schedule_template_setting
 (
     id                              bigserial PRIMARY KEY,
-    hours_per_lesson                numeric(4, 2) NOT NULL,
-    max_identical_lessons_per_day   int           NOT NULL,
-    max_study_hours_per_day         int           NOT NULL,
-    max_teacher_hours_per_week      int           NOT NULL,
+    academic_year_id                bigint    REFERENCES academic_year (id),
+    max_identical_lessons_per_day   int       NOT NULL,
+    max_study_hours_per_day         int       NOT NULL,
+    max_teacher_hours_per_week      int       NOT NULL,
     max_group_lesson_hours_per_week int,
+    lessons_per_class               int       NOT NULL DEFAULT 2,
+    study_days_mask                 int       NOT NULL DEFAULT 31,
     created_at                      timestamp,
     modified_at                     timestamp
 );
+
+CREATE TABLE IF NOT EXISTS schedule_restriction
+(
+    id                              bigserial PRIMARY KEY,
+    academic_year_id                bigint    REFERENCES academic_year (id),
+    min_group_lessons_per_day       int       NOT NULL DEFAULT 2,
+    max_group_lessons_per_day       int       NOT NULL DEFAULT 4,
+    max_teacher_lessons_per_day     int       NOT NULL DEFAULT 5,
+    no_gaps_in_group_schedule       bool      NOT NULL DEFAULT true,
+    max_consecutive_teacher_lessons int       NOT NULL DEFAULT 4,
+    time_priority                   varchar   NOT NULL DEFAULT 'none',
+    allow_flow_lessons              bool      NOT NULL DEFAULT TRUE,
+    created_at                      timestamp NOT NULL,
+    modified_at                     timestamp
+);
+
 CREATE TABLE IF NOT EXISTS bell_schedule
 (
     id               bigserial PRIMARY KEY,
-    academic_year_id bigint NOT NULL REFERENCES academic_year (id),
-    lesson_number    int    NOT NULL,
-    start_time       time   NOT NULL,
-    end_time         time   NOT NULL
+    academic_year_id bigint    NOT NULL REFERENCES academic_year (id),
+    lesson_number    int       NOT NULL,
+    start_time       time      NOT NULL,
+    end_time         time      NOT NULL,
+    UNIQUE (academic_year_id, lesson_number)
 );
 
-ALTER TABLE bell_schedule
-    ADD CONSTRAINT bell_schedule_academic_year_lesson_unique
-        UNIQUE (academic_year_id, lesson_number);
+CREATE TABLE IF NOT EXISTS teacher_slot_preference
+(
+    id               bigserial PRIMARY KEY,
+    academic_year_id bigint    NOT NULL REFERENCES academic_year (id),
+    teacher_id       bigint    NOT NULL REFERENCES teacher (id),
+    weekday          varchar   NOT NULL,
+    lesson_number    int       NOT NULL,
+    slot_type        varchar   NOT NULL DEFAULT 'preferred',
+    created_at       timestamp NOT NULL,
+    modified_at      timestamp,
+    UNIQUE (academic_year_id, teacher_id, weekday, lesson_number, slot_type)
+);
+
+CREATE TABLE IF NOT EXISTS cycle_committee_lab_room
+(
+    id                  bigserial PRIMARY KEY,
+    academic_year_id    bigint    NOT NULL REFERENCES academic_year (id),
+    cycle_committee_id  bigint    NOT NULL REFERENCES cycle_committee (id),
+    room_id             bigint    NOT NULL REFERENCES room (id),
+    created_at          timestamp NOT NULL,
+    modified_at         timestamp,
+    UNIQUE (academic_year_id, cycle_committee_id, room_id)
+);
