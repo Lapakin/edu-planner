@@ -12,6 +12,7 @@ import (
 
 func NewRouter(svc *service.Services) *gin.Engine {
 	r := gin.New()
+	r.Use(gin.Recovery())
 
 	apiV1 := r.Group("/api/v1")
 	apiV1.Handle(http.MethodPost, "/login", handler.NewLoginHandler(svc.AuthSvc))

@@ -170,6 +170,11 @@ func (s *authSvc) SetPassword(ctx context.Context, token string, password string
 		return "", handleDBError(err)
 	}
 
+	// Activate user when they set their password via invite link
+	if err = s.rm.NewUserRepo(tx).ActivateUser(ctx, inviteToken.UserID, now); err != nil {
+		return "", handleDBError(err)
+	}
+
 	// Fetch user for JWT claims
 	user, err := s.rm.NewUserRepo(tx).GetUserByID(ctx, inviteToken.UserID)
 	if err != nil {
