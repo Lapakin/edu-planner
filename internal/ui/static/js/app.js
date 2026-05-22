@@ -1131,6 +1131,7 @@ const App = {
         getCached('cycle-committees', '/api/syllabus/cycle-committees'),
         getCached('rooms', '/api/syllabus/rooms'),
         Api.get(`/api/syllabus/teachers?academic_year_id=${yearId}`),
+        this.ensureTeacherUsersCache(),
       ]);
       restriction = (restrictList && restrictList.length > 0) ? { ...restrictList[restrictList.length - 1] } : {
         id: 0, academic_year_id: Number(yearId),

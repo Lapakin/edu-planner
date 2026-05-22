@@ -23,5 +23,5 @@ sqs:
 
 schedule_generation:
   timeout_seconds: 120
-  number_of_goroutines: 4
-  max_attempts: 200
+  number_of_goroutines: 10
+  max_attempts: 10000
