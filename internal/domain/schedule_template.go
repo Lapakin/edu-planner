@@ -70,6 +70,7 @@ type DaySchedule map[int][]*ScheduleLesson
 type ScheduleLesson struct {
 	Type       LessonType           `json:"type"`
 	SubjectID  uint64               `json:"subject_id"`
+	IsLab      bool                 `json:"is_lab"`
 	SubLessons []*ScheduleSubLesson `json:"sub_lessons"`
 }
 

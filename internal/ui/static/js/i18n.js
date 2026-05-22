@@ -18,7 +18,9 @@ const TRANSLATIONS = {
 
     auth: {
       loginTitle: "Вхід до системи",
+      loginSubtitle: "Введіть дані облікового запису для продовження.",
       emailLabel: "Електронна пошта",
+      emailPlaceholder: "ви@example.com",
       passwordLabel: "Пароль",
       loginBtn: "Увійти",
       logoutBtn: "Вийти",
@@ -409,6 +411,14 @@ const TRANSLATIONS = {
       viewModeLabel: "Режим перегляду",
       groupView: "За групою",
       teacherView: "За викладачем",
+      typeUnited: "Лекція",
+      typeSplit: "Лаб",
+      typeFlow: "Потік",
+      typeLecture: "Лекція",
+      typeLab: "Лаб",
+      legendLecture: "Лекція",
+      legendLab: "Лабораторна",
+      legendFlow: "Потік",
       days: {
         monday: "Понеділок",
         tuesday: "Вівторок",
@@ -451,7 +461,9 @@ const TRANSLATIONS = {
 
     auth: {
       loginTitle: "Sign in",
+      loginSubtitle: "Enter your account credentials to continue.",
       emailLabel: "Email address",
+      emailPlaceholder: "you@example.com",
       passwordLabel: "Password",
       loginBtn: "Sign in",
       logoutBtn: "Sign out",
@@ -839,6 +851,14 @@ const TRANSLATIONS = {
       viewModeLabel: "View mode",
       groupView: "By group",
       teacherView: "By teacher",
+      typeUnited: "Lecture",
+      typeSplit: "Lab",
+      typeFlow: "Flow",
+      typeLecture: "Lecture",
+      typeLab: "Lab",
+      legendLecture: "Lecture",
+      legendLab: "Laboratory",
+      legendFlow: "Flow",
       days: {
         monday: "Monday",
         tuesday: "Tuesday",

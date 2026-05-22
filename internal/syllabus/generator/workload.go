@@ -185,13 +185,20 @@ func buildWorkloadsFromDomain(
 			continue
 		}
 
-		// Get total classroom hours for this distribution
-		totalHours := 0
+		classroomWork := 0
 		if dist.ClassroomWork != nil {
-			totalHours = *dist.ClassroomWork
+			classroomWork = *dist.ClassroomWork
+		}
+		labHours := 0
+		if dist.Laboratory != nil {
+			labHours = *dist.Laboratory
+		}
+		practHours := 0
+		if dist.Practical != nil {
+			practHours = *dist.Practical
 		}
 
-		if totalHours <= 0 {
+		if classroomWork <= 0 && labHours <= 0 && practHours <= 0 {
 			continue
 		}
 
@@ -202,9 +209,27 @@ func buildWorkloadsFromDomain(
 		}
 
 		for _, a := range distAssignments {
-			hours := totalHours
-			if a.AssignedHours != nil {
+			isLab := a.RoleType != nil && *a.RoleType != "Лектор"
+
+			hours := 0
+			switch {
+			case a.AssignedHours != nil:
 				hours = *a.AssignedHours
+			case isLab:
+				// Lab/practical teacher: use laboratory + practical hours from distribution
+				hours = labHours + practHours
+			default:
+				// Lecturer: use classroom hours minus the lab/practical portion
+				lecHours := classroomWork - labHours - practHours
+				if lecHours > 0 {
+					hours = lecHours
+				} else {
+					hours = classroomWork
+				}
+			}
+
+			if hours <= 0 {
+				continue
 			}
 
 			w := &Workload{
@@ -216,7 +241,7 @@ func buildWorkloadsFromDomain(
 				isSplitting:            g.IsSplitting,
 				subGroupNumber:         nil,
 				cycleCommitteeID:       cycleCommitteeID,
-				isLab:                  a.RoleType != nil && *a.RoleType != "Лектор",
+				isLab:                  isLab,
 			}
 
 			workloads = append(workloads, w)
