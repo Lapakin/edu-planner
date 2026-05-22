@@ -87,7 +87,14 @@
     </div>
     <div class="form-field">
       <label for="login-password" data-i18n="auth.passwordLabel"></label>
-      <input type="password" id="login-password" autocomplete="current-password" data-i18n-placeholder="auth.passwordLabel">
+      <div style="position:relative">
+        <input type="password" id="login-password" autocomplete="current-password" data-i18n-placeholder="auth.passwordLabel" style="padding-right:40px;width:100%;box-sizing:border-box">
+        <button type="button" id="login-pw-toggle" tabindex="-1" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;color:var(--text-muted);display:flex;align-items:center">
+          <svg id="login-pw-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
     </div>
     <div id="login-error" class="error-msg hidden"></div>
     <button id="login-btn" class="btn btn-primary btn-full" data-i18n="auth.loginBtn"></button>
@@ -114,15 +121,14 @@
     </div>
 
     <div class="header-right">
-      <!-- User email display; selectors kept hidden for JS state management -->
-      <div class="header-context" id="header-context">
-        <span id="header-email" class="header-email"></span>
-        <div style="display:none">
-          <select id="year-select"><option value=""></option></select>
-          <select id="semester-select"><option value=""></option></select>
-        </div>
+      <!-- Hidden selectors for JS state management -->
+      <div style="display:none">
+        <select id="year-select"><option value=""></option></select>
+        <select id="semester-select"><option value=""></option></select>
       </div>
 
+      <!-- User role label -->
+      <span id="header-role" class="header-role"></span>
       <!-- Profile button → navigates to personal info page -->
       <a href="#/profile" class="profile-btn" id="profile-btn" data-i18n-aria="nav.profile">EP</a>
     </div>

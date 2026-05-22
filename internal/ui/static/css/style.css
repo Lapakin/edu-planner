@@ -228,6 +228,7 @@ ul, ol {
   flex-shrink: 0;
 }
 
+
 .profile-btn {
   width: 34px;
   height: 34px;
@@ -2259,7 +2260,7 @@ table.entity-table td.col-actions {
 }
 
 .sched-name {
-  font-size: 1rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--primary);
 }
@@ -2273,6 +2274,7 @@ table.entity-table td.col-actions {
   flex-wrap: wrap;
 }
 
+/* Kept for backwards compat */
 .sched-group-filter {
   display: flex;
   align-items: center;
@@ -2282,14 +2284,33 @@ table.entity-table td.col-actions {
   white-space: nowrap;
 }
 
-.sched-group-filter select {
+/* Schedule filter bar (replaces old group filter) */
+.sched-filter-bar {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.sched-toggle-field {
+  min-width: unset !important;
+  margin-left: auto;
+}
+
+.sched-mode-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sched-mode-label {
   font-size: .82rem;
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color var(--transition), font-weight var(--transition);
+}
+
+.sched-mode-label-active {
   color: var(--text);
-  cursor: pointer;
+  font-weight: 600;
 }
 
 /* Week toggle tabs */
