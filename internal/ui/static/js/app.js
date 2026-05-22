@@ -121,18 +121,31 @@ const App = {
   showApp() {
     document.getElementById('login-page').classList.add('hidden');
     document.getElementById('app-shell').classList.remove('hidden');
-    // Show admin-only nav items
     const role = this.state.user?.role;
+    // admin-only nav items (users page)
     document.querySelectorAll('.admin-only').forEach(el => {
-      el.classList.toggle('hidden', role !== 'admin');
+      el.classList.toggle('hidden', role !== 'admin' && role !== 'dean');
     });
-    // Show user email in header and set profile button initial letter
+    // teacher-only: show only home and schedule
+    const teacherAllowed = ['home', 'profile'];
+    document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+      if (role === 'teacher') {
+        el.classList.toggle('hidden', !teacherAllowed.includes(el.dataset.page));
+      } else {
+        el.classList.remove('hidden');
+      }
+    });
+    // Set profile button initial letter
     const email   = this.state.user?.email || '';
     const initial = (email[0] || 'U').toUpperCase();
     const profileBtn = document.getElementById('profile-btn');
     if (profileBtn) profileBtn.textContent = initial;
-    const headerEmail = document.getElementById('header-email');
-    if (headerEmail) headerEmail.textContent = email;
+    // Set role label
+    const headerRole = document.getElementById('header-role');
+    if (headerRole) {
+      headerRole.textContent = t('roles.' + (role || 'user'));
+      headerRole.className = 'badge ' + (role === 'admin' ? 'badge-warning' : 'badge-info');
+    }
     // Sync lang buttons
     applyTranslations();
   },
@@ -161,6 +174,17 @@ const App = {
     const parts = path.split('/');
     const page  = parts[0];
     const tab   = parts[1] || null;
+
+    const role = this.state.user?.role;
+    const teacherAllowed = ['home', 'profile'];
+    if (role === 'teacher' && !teacherAllowed.includes(page)) {
+      location.hash = '#/home';
+      return;
+    }
+    if (page === 'users' && role !== 'admin' && role !== 'dean') {
+      location.hash = '#/home';
+      return;
+    }
 
     document.querySelectorAll('.nav-item').forEach(a => {
       a.classList.toggle('active', a.dataset.page === page);
@@ -371,6 +395,49 @@ const App = {
     } catch (e) { Toast.error(e.message); }
   },
 
+  async activateEntity(entityKey, row, mgr) {
+    const cfg = ENTITY_CONFIGS[entityKey];
+    if (!cfg) return;
+    try {
+      const payload = [{ ...row, is_active: true }];
+      await Api.put(cfg.apiPath, payload);
+      row.is_active = true;
+      mgr.reloadRow(row);
+      Toast.success(t('messages.saved'));
+    } catch (e) { Toast.error(e.message); }
+  },
+
+  async resetUserInvite(row) {
+    try {
+      const resp = await Api.post(`/api/auth/users/${row.id}/reset-invite`, null);
+      const inviteLink = window.location.origin + (resp?.invite_link || '');
+      const body = document.createElement('div');
+      body.innerHTML = `
+        <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:12px">${t('users.inviteLinkHint')}</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="reset-link-input" readonly value="${inviteLink}" style="flex:1;background:var(--bg-secondary,#f8fafc)">
+          <button class="btn btn-secondary btn-sm" id="reset-copy-btn">${t('actions.copy')}</button>
+        </div>`;
+      const foot = document.createElement('div');
+      foot.innerHTML = `<button class="btn btn-primary" onclick="closeModal()">${t('actions.close')}</button>`;
+      openModal(t('users.inviteLink').replace(':', ''), body, foot);
+      body.querySelector('#reset-copy-btn').addEventListener('click', () => {
+        navigator.clipboard.writeText(inviteLink).then(() => Toast.info(t('messages.copied')));
+      });
+    } catch (e) { Toast.error(e.message); }
+  },
+
+  async toggleUser(row, mgr) {
+    const activating = !row.is_active;
+    const path = `/api/auth/users/${row.id}/${activating ? 'activate' : 'deactivate'}`;
+    try {
+      await Api.post(path, null);
+      row.is_active = activating;
+      mgr.reloadRow(row);
+      Toast.success(t('messages.saved'));
+    } catch (e) { Toast.error(e.message); }
+  },
+
   async toggleScheduleTemplate(row, mgr) {
     const path = `/api/syllabus/schedule-templates/${row.id}/activate`;
     try {
@@ -406,6 +473,8 @@ const App = {
       <div class="home-cards" id="home-stats"></div>`;
 
     this._renderActiveTemplate(main.querySelector('#home-active-tpl'));
+
+    if (user?.role === 'teacher') return;
 
     const cards = [
       { i18nKey: 'entities.academicYears', cacheKey: 'academic-years', href: '#/academic-settings/academic-years', icon: 'icon-calendar' },
@@ -806,13 +875,13 @@ const App = {
     }
 
     const DAYS = [
-      { label: 'Пн', bit: 1 },
-      { label: 'Вт', bit: 2 },
-      { label: 'Ср', bit: 4 },
-      { label: 'Чт', bit: 8 },
-      { label: 'Пт', bit: 16 },
-      { label: 'Сб', bit: 32 },
-      { label: 'Нд', bit: 64, disabled: true },
+      { label: t('weekdaysShort.monday'),    bit: 1 },
+      { label: t('weekdaysShort.tuesday'),   bit: 2 },
+      { label: t('weekdaysShort.wednesday'), bit: 4 },
+      { label: t('weekdaysShort.thursday'),  bit: 8 },
+      { label: t('weekdaysShort.friday'),    bit: 16 },
+      { label: t('weekdaysShort.saturday'),  bit: 32 },
+      { label: t('weekdaysShort.sunday'),    bit: 64, disabled: true },
     ];
     const dayButtonsHTML = DAYS.map(d => {
       const isActive = (setting.study_days_mask & d.bit) !== 0;
@@ -824,19 +893,19 @@ const App = {
       <div class="sm-tabs">
         <button class="sm-tab active" data-panel="format">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          Формат пари <span class="sm-tab-badge">2</span>
+          ${t('modal.tabFormat')} <span class="sm-tab-badge">2</span>
         </button>
         <button class="sm-tab" data-panel="calendar">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          Календар <span class="sm-tab-badge">1</span>
+          ${t('modal.tabCalendar')} <span class="sm-tab-badge">1</span>
         </button>
         <button class="sm-tab" data-panel="daily">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
-          Денні ліміти <span class="sm-tab-badge">2</span>
+          ${t('modal.tabDaily')} <span class="sm-tab-badge">2</span>
         </button>
         <button class="sm-tab" data-panel="weekly">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
-          Тижневі ліміти <span class="sm-tab-badge">2</span>
+          ${t('modal.tabWeekly')} <span class="sm-tab-badge">2</span>
         </button>
       </div>
       <div class="sm-panels">
@@ -845,15 +914,15 @@ const App = {
             <div class="sm-constraint-info">
               <div class="sm-constraint-label">
                 <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-                Тривалість заняття
+                ${t('modal.lessonDuration')}
               </div>
-              <div class="sm-constraint-desc">Кількість академічних годин в одній парі.</div>
+              <div class="sm-constraint-desc">${t('modal.lessonDurationDesc')}</div>
             </div>
             <div class="sm-control">
               <select class="sm-select" id="sms-lessons-per-class">
-                <option value="1" ${setting.lessons_per_class === 1 ? 'selected' : ''}>1 акад. година</option>
-                <option value="2" ${setting.lessons_per_class === 2 ? 'selected' : ''}>2 акад. години (стандартна пара)</option>
-                <option value="3" ${setting.lessons_per_class === 3 ? 'selected' : ''}>3 акад. години</option>
+                <option value="1" ${setting.lessons_per_class === 1 ? 'selected' : ''}>${t('lessonsPerClass.one')}</option>
+                <option value="2" ${setting.lessons_per_class === 2 ? 'selected' : ''}>${t('lessonsPerClass.two')}</option>
+                <option value="3" ${setting.lessons_per_class === 3 ? 'selected' : ''}>${t('lessonsPerClass.three')}</option>
               </select>
             </div>
           </div>
@@ -864,9 +933,9 @@ const App = {
             <div class="sm-constraint-info">
               <div class="sm-constraint-label">
                 <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
-                Навчальні дні
+                ${t('modal.studyDays')}
               </div>
-              <div class="sm-constraint-desc">Дні тижня, у які формується розклад.</div>
+              <div class="sm-constraint-desc">${t('modal.studyDaysDesc')}</div>
             </div>
             <div class="sm-control">
               <div class="sm-day-strip" id="sms-day-strip">${dayButtonsHTML}</div>
@@ -879,26 +948,26 @@ const App = {
             <div class="sm-constraint-info">
               <div class="sm-constraint-label">
                 <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
-                Макс. однакових пар на день
+                ${t('modal.maxIdentical')}
               </div>
-              <div class="sm-constraint-desc">Скільки пар з однієї дисципліни може бути в один день.</div>
+              <div class="sm-constraint-desc">${t('modal.maxIdenticalDesc')}</div>
             </div>
             <div class="sm-control">
               <input type="number" class="sm-num-input" id="sms-max-identical" value="${setting.max_identical_lessons_per_day}" min="1" max="6">
-              <span class="sm-unit-label">пар</span>
+              <span class="sm-unit-label">${t('units.lessons')}</span>
             </div>
           </div>
           <div class="sm-constraint">
             <div class="sm-constraint-info">
               <div class="sm-constraint-label">
                 <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg></div>
-                Макс. навчальних годин на день
+                ${t('modal.maxHoursDay')}
               </div>
-              <div class="sm-constraint-desc">Сумарна верхня межа аудиторних годин у розкладі групи за день.</div>
+              <div class="sm-constraint-desc">${t('modal.maxHoursDayDesc')}</div>
             </div>
             <div class="sm-control">
               <input type="number" class="sm-num-input" id="sms-max-hours-day" value="${setting.max_study_hours_per_day}" min="2" max="12">
-              <span class="sm-unit-label">год</span>
+              <span class="sm-unit-label">${t('units.hours')}</span>
             </div>
           </div>
         </div>
@@ -908,26 +977,26 @@ const App = {
             <div class="sm-constraint-info">
               <div class="sm-constraint-label">
                 <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-3-3.87M4 21v-2a4 4 0 013-3.87"/><circle cx="12" cy="7" r="4"/></svg></div>
-                Макс. годин викладача на тиждень
+                ${t('modal.maxTeacherWeek')}
               </div>
-              <div class="sm-constraint-desc">Верхня межа аудиторного навантаження одного викладача за тиждень.</div>
+              <div class="sm-constraint-desc">${t('modal.maxTeacherWeekDesc')}</div>
             </div>
             <div class="sm-control">
               <input type="number" class="sm-num-input" id="sms-max-teacher-week" value="${setting.max_teacher_hours_per_week}" min="1" max="40">
-              <span class="sm-unit-label">год</span>
+              <span class="sm-unit-label">${t('units.hours')}</span>
             </div>
           </div>
           <div class="sm-constraint">
             <div class="sm-constraint-info">
               <div class="sm-constraint-label">
                 <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
-                Макс. годин занять групи на тиждень
+                ${t('modal.maxGroupWeek')}
               </div>
-              <div class="sm-constraint-desc">Сумарна верхня межа годин у розкладі однієї групи за тиждень.</div>
+              <div class="sm-constraint-desc">${t('modal.maxGroupWeekDesc')}</div>
             </div>
             <div class="sm-control">
               <input type="number" class="sm-num-input" id="sms-max-group-week" value="${setting.max_group_lesson_hours_per_week ?? 36}" min="1" max="60">
-              <span class="sm-unit-label">год</span>
+              <span class="sm-unit-label">${t('units.hours')}</span>
             </div>
           </div>
         </div>
@@ -950,9 +1019,9 @@ const App = {
 
     // Footer
     const statusDot = document.createElement('span');
-    statusDot.className = 'sm-status-dot';
+    statusDot.className = 'sm-status-dot saved';
     const statusText = document.createElement('span');
-    statusText.textContent = 'Є незбережені зміни';
+    statusText.textContent = t('modal.saved');
     const statusDiv = document.createElement('div');
     statusDiv.className = 'sm-modal-status';
     statusDiv.append(statusDot, statusText);
@@ -997,7 +1066,7 @@ const App = {
         delete this.cache['schedule-template-settings'];
         Toast.success(t('messages.saved'));
         statusDot.classList.add('saved');
-        statusText.textContent = 'Усі зміни збережено';
+        statusText.textContent = t('modal.saved');
       } catch (e) {
         Toast.error(e.message);
       } finally {
@@ -1066,8 +1135,12 @@ const App = {
     const originalLabKeys = new Set(labRoomMap.keys());
 
     const weekdayShort = {
-      monday: 'Пн', tuesday: 'Вт', wednesday: 'Ср',
-      thursday: 'Чт', friday: 'Пт', saturday: 'Сб',
+      monday:    t('weekdaysShort.monday'),
+      tuesday:   t('weekdaysShort.tuesday'),
+      wednesday: t('weekdaysShort.wednesday'),
+      thursday:  t('weekdaysShort.thursday'),
+      friday:    t('weekdaysShort.friday'),
+      saturday:  t('weekdaysShort.saturday'),
     };
 
     // Two sub-views: main tabs and teacher preferences sub-panel
@@ -1089,19 +1162,19 @@ const App = {
         <div class="sm-tabs">
           <button class="sm-tab active" data-panel="load">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
-            Навантаження <span class="sm-tab-badge">4</span>
+            ${t('modal.tabLoad')} <span class="sm-tab-badge">4</span>
           </button>
           <button class="sm-tab" data-panel="time">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            Час і календар <span class="sm-tab-badge">4</span>
+            ${t('modal.tabTime')} <span class="sm-tab-badge">4</span>
           </button>
           <button class="sm-tab" data-panel="space">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg>
-            Аудиторії <span class="sm-tab-badge">1</span>
+            ${t('modal.tabSpace')} <span class="sm-tab-badge">1</span>
           </button>
           <button class="sm-tab" data-panel="org">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="17" cy="7" r="3"/><path d="M21 21v-2a4 4 0 00-3-3.87"/></svg>
-            Організаційні <span class="sm-tab-badge">1</span>
+            ${t('modal.tabOrg')} <span class="sm-tab-badge">1</span>
           </button>
         </div>
         <div class="sm-panels">
@@ -1110,52 +1183,52 @@ const App = {
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
-                  Макс. пар на день для студентів
+                  ${t('modal.maxGroupDay')}
                 </div>
-                <div class="sm-constraint-desc">Верхня межа кількості пар у розкладі групи за один навчальний день.</div>
+                <div class="sm-constraint-desc">${t('modal.maxGroupDayDesc')}</div>
               </div>
               <div class="sm-control">
                 <input type="number" class="sm-num-input" id="smr-max-group-day" value="${restriction.max_group_lessons_per_day}" min="1" max="8">
-                <span class="sm-unit-label">пар</span>
+                <span class="sm-unit-label">${t('units.lessons')}</span>
               </div>
             </div>
             <div class="sm-constraint">
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-3-3.87M4 21v-2a4 4 0 013-3.87"/><circle cx="12" cy="7" r="4"/></svg></div>
-                  Макс. пар на день для викладачів
+                  ${t('modal.maxTeacherDay')}
                 </div>
-                <div class="sm-constraint-desc">Скільки пар максимум може провести один викладач протягом дня.</div>
+                <div class="sm-constraint-desc">${t('modal.maxTeacherDayDesc')}</div>
               </div>
               <div class="sm-control">
                 <input type="number" class="sm-num-input" id="smr-max-teacher-day" value="${restriction.max_teacher_lessons_per_day}" min="1" max="8">
-                <span class="sm-unit-label">пар</span>
+                <span class="sm-unit-label">${t('units.lessons')}</span>
               </div>
             </div>
             <div class="sm-constraint">
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 19 7.5"/></svg></div>
-                  Безперервна робота викладача
+                  ${t('modal.consecutive')}
                 </div>
-                <div class="sm-constraint-desc">Максимум пар підряд без перерви для одного викладача (0 — без ліміту).</div>
+                <div class="sm-constraint-desc">${t('modal.consecutiveDesc')}</div>
               </div>
               <div class="sm-control">
                 <input type="number" class="sm-num-input" id="smr-consecutive" value="${restriction.max_consecutive_teacher_lessons}" min="0" max="8">
-                <span class="sm-unit-label">підряд</span>
+                <span class="sm-unit-label">${t('units.consecutive')}</span>
               </div>
             </div>
             <div class="sm-constraint">
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M22 12H2M12 2v10"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></div>
-                  Мін. пар групи на день
+                  ${t('modal.minGroupDay')}
                 </div>
-                <div class="sm-constraint-desc">Якщо група має заняття у цей день — мінімальна кількість пар (0 — без ліміту).</div>
+                <div class="sm-constraint-desc">${t('modal.minGroupDayDesc')}</div>
               </div>
               <div class="sm-control">
                 <input type="number" class="sm-num-input" id="smr-min-group-day" value="${restriction.min_group_lessons_per_day}" min="0" max="4">
-                <span class="sm-unit-label">пар</span>
+                <span class="sm-unit-label">${t('units.lessons')}</span>
               </div>
             </div>
           </div>
@@ -1165,14 +1238,14 @@ const App = {
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div>
-                  Запобігання «вікнам»
+                  ${t('modal.gapPrevention')}
                 </div>
-                <div class="sm-constraint-desc">Мінімізувати порожні години між парами у студентів і викладачів.</div>
+                <div class="sm-constraint-desc">${t('modal.gapPreventionDesc')}</div>
               </div>
               <div class="sm-control">
                 <select class="sm-select" id="smr-no-gaps">
-                  <option value="false" ${!restriction.no_gaps_in_group_schedule ? 'selected' : ''}>Вимкнено</option>
-                  <option value="true" ${restriction.no_gaps_in_group_schedule ? 'selected' : ''}>Виключити повністю</option>
+                  <option value="false" ${!restriction.no_gaps_in_group_schedule ? 'selected' : ''}>${t('modal.gapOff')}</option>
+                  <option value="true" ${restriction.no_gaps_in_group_schedule ? 'selected' : ''}>${t('modal.gapOn')}</option>
                 </select>
               </div>
             </div>
@@ -1180,14 +1253,14 @@ const App = {
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M4.93 4.93l14.14 14.14"/></svg></div>
-                  Заборонені години викладачів
+                  ${t('modal.forbiddenHours')}
                 </div>
-                <div class="sm-constraint-desc">Час, коли викладач не може проводити заняття (дистанційне навчання, особистий час).</div>
+                <div class="sm-constraint-desc">${t('modal.forbiddenHoursDesc')}</div>
               </div>
               <div class="sm-control">
                 <button class="btn btn-secondary btn-sm" id="smr-forbidden-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                  Налаштувати${forbCount > 0 ? ` (${forbCount})` : ''}
+                  ${t('modal.configure')}${forbCount > 0 ? ` (${forbCount})` : ''}
                 </button>
               </div>
             </div>
@@ -1195,14 +1268,14 @@ const App = {
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-                  Побажання викладачів
+                  ${t('modal.teacherPrefs')}
                 </div>
-                <div class="sm-constraint-desc">Пріоритетні години, у які викладач хоче проводити заняття.</div>
+                <div class="sm-constraint-desc">${t('modal.teacherPrefsDesc')}</div>
               </div>
               <div class="sm-control">
                 <button class="btn btn-secondary btn-sm" id="smr-preferred-btn">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  Налаштувати${prefCount > 0 ? ` (${prefCount})` : ''}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  ${t('modal.configure')}${prefCount > 0 ? ` (${prefCount})` : ''}
                 </button>
               </div>
             </div>
@@ -1210,15 +1283,15 @@ const App = {
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
-                  Пріоритет проведення занять
+                  ${t('modal.timePriority')}
                 </div>
-                <div class="sm-constraint-desc">Бажана половина дня для розміщення пар у розкладі.</div>
+                <div class="sm-constraint-desc">${t('modal.timePriorityDesc')}</div>
               </div>
               <div class="sm-control">
                 <select class="sm-select" id="smr-time-priority">
-                  <option value="none" ${restriction.time_priority === 'none' ? 'selected' : ''}>Без пріоритету</option>
-                  <option value="morning" ${restriction.time_priority === 'morning' ? 'selected' : ''}>У першій половині дня</option>
-                  <option value="afternoon" ${restriction.time_priority === 'afternoon' ? 'selected' : ''}>У другій половині дня</option>
+                  <option value="none" ${restriction.time_priority === 'none' ? 'selected' : ''}>${t('timePriority.none')}</option>
+                  <option value="morning" ${restriction.time_priority === 'morning' ? 'selected' : ''}>${t('timePriority.morning')}</option>
+                  <option value="afternoon" ${restriction.time_priority === 'afternoon' ? 'selected' : ''}>${t('timePriority.afternoon')}</option>
                 </select>
               </div>
             </div>
@@ -1228,12 +1301,12 @@ const App = {
             <div class="sm-constraint" style="display:block;">
               <div class="sm-constraint-label" style="margin-bottom:4px;">
                 <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-                Лабораторні фахових дисциплін
+                ${t('modal.labRooms')}
               </div>
-              <div class="sm-constraint-desc" style="margin-left:34px;margin-bottom:12px;">Виберіть комп'ютерні класи, у яких можуть проводитися лабораторні роботи кафедри.</div>
+              <div class="sm-constraint-desc" style="margin-left:34px;margin-bottom:12px;">${t('modal.labRoomsDesc')}</div>
               <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
                 <select class="sm-select" id="smr-cycle-committee" style="min-width:200px;flex-shrink:0;">
-                  <option value="">Оберіть циклову комісію…</option>
+                  <option value="">${t('modal.chooseCycleCommittee')}</option>
                   ${ccOptions}
                 </select>
                 <div class="sm-chips" id="smr-room-chips" style="flex:1;"></div>
@@ -1246,12 +1319,12 @@ const App = {
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label">
                   <div class="sm-constraint-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="17" cy="7" r="3"/><path d="M21 21v-2a4 4 0 00-3-3.87"/></svg></div>
-                  Потокові заняття (спільні лекції)
+                  ${t('modal.flowLessons')}
                 </div>
-                <div class="sm-constraint-desc">Дозволити одному викладачу вести пару одночасно для кількох груп.</div>
+                <div class="sm-constraint-desc">${t('modal.flowLessonsDesc')}</div>
               </div>
               <div class="sm-control">
-                <span class="sm-unit-label" id="smr-flow-label">${restriction.allow_flow_lessons ? 'Дозволено' : 'Заборонено'}</span>
+                <span class="sm-unit-label" id="smr-flow-label">${restriction.allow_flow_lessons ? t('modal.flowOn') : t('modal.flowOff')}</span>
                 <button class="sm-toggle ${restriction.allow_flow_lessons ? 'on' : ''}" id="smr-flow-toggle" role="switch" aria-checked="${restriction.allow_flow_lessons}"></button>
               </div>
             </div>
@@ -1275,7 +1348,7 @@ const App = {
         flowToggle.classList.toggle('on');
         const isOn = flowToggle.classList.contains('on');
         flowToggle.setAttribute('aria-checked', String(isOn));
-        flowLabel.textContent = isOn ? 'Дозволено' : 'Заборонено';
+        flowLabel.textContent = isOn ? t('modal.flowOn') : t('modal.flowOff');
       });
 
       // Forbidden / preferred buttons
@@ -1325,13 +1398,13 @@ const App = {
       subPanel.style.display = 'flex';
       subPanel.innerHTML = '';
 
-      const title = slotType === 'forbidden' ? 'Заборонені години викладачів' : 'Побажання викладачів';
+      const title = slotType === 'forbidden' ? t('modal.forbiddenTitle') : t('modal.preferredTitle');
 
       const header = document.createElement('div');
       header.className = 'sm-subpanel-header';
       const backBtn = document.createElement('button');
       backBtn.className = 'btn btn-secondary btn-sm';
-      backBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Назад';
+      backBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ${t('modal.back')}`;
       backBtn.addEventListener('click', () => {
         subPanel.style.display = 'none';
         mainView.style.display = 'flex';
@@ -1354,7 +1427,7 @@ const App = {
         if (filtered.length === 0) {
           const empty = document.createElement('div');
           empty.style.cssText = 'color:var(--text-muted);font-size:13px;text-align:center;padding:16px 0;';
-          empty.textContent = 'Немає налаштувань';
+          empty.textContent = t('modal.noSettings');
           body.appendChild(empty);
         } else {
           filtered.forEach(pref => {
@@ -1363,7 +1436,7 @@ const App = {
             row.innerHTML = `
               <div class="sm-constraint-info">
                 <div class="sm-constraint-label" style="font-size:12.5px;">
-                  Викладач #${pref.teacher_id} &mdash; ${weekdayShort[pref.weekday] || pref.weekday}, пара&nbsp;${pref.lesson_number}
+                  ${(() => { const tc = teachers.find(t => t.id === pref.teacher_id); const tUsers = App.cache['teacher-users'] || []; const u = tc ? tUsers.find(u => u.id === tc.user_id) : null; return u?.full_name || `#${pref.teacher_id}`; })()} &mdash; ${weekdayShort[pref.weekday] || pref.weekday}, ${t('modal.lessonNum')}${pref.lesson_number}
                 </div>
               </div>
               <div class="sm-control">
@@ -1385,37 +1458,38 @@ const App = {
         // Add form
         const form = document.createElement('div');
         form.className = 'sm-add-form';
+        const tUsers = App.cache['teacher-users'] || [];
         const teacherOptions = teachers.length > 0
-          ? teachers.map(tc => `<option value="${tc.id}">Викладач #${tc.id}</option>`).join('')
-          : '<option value="" disabled>Немає викладачів</option>';
+          ? teachers.map(tc => { const u = tUsers.find(u => u.id === tc.user_id); return `<option value="${tc.id}">${u?.full_name || '#' + tc.id}</option>`; }).join('')
+          : `<option value="" disabled>${t('modal.selectTeacher')}</option>`;
         form.innerHTML = `
           <div class="sm-add-form-field">
-            <span class="sm-add-form-label">Викладач</span>
+            <span class="sm-add-form-label">${t('fields.teacher')}</span>
             <select class="sm-select" id="sp-teacher" style="min-width:150px;">${teacherOptions}</select>
           </div>
           <div class="sm-add-form-field">
-            <span class="sm-add-form-label">День</span>
+            <span class="sm-add-form-label">${t('fields.weekday')}</span>
             <select class="sm-select" id="sp-weekday" style="min-width:100px;">
-              <option value="monday">Понеділок</option>
-              <option value="tuesday">Вівторок</option>
-              <option value="wednesday">Середа</option>
-              <option value="thursday">Четвер</option>
-              <option value="friday">П'ятниця</option>
-              <option value="saturday">Субота</option>
+              <option value="monday">${t('weekdays.monday')}</option>
+              <option value="tuesday">${t('weekdays.tuesday')}</option>
+              <option value="wednesday">${t('weekdays.wednesday')}</option>
+              <option value="thursday">${t('weekdays.thursday')}</option>
+              <option value="friday">${t('weekdays.friday')}</option>
+              <option value="saturday">${t('weekdays.saturday')}</option>
             </select>
           </div>
           <div class="sm-add-form-field">
-            <span class="sm-add-form-label">Пара №</span>
+            <span class="sm-add-form-label">${t('modal.lessonNum')}</span>
             <input type="number" class="sm-num-input" id="sp-lesson" value="1" min="1" max="8" style="width:64px;">
           </div>
-          <button class="btn btn-primary btn-sm" id="sp-add-btn" style="align-self:flex-end;">Додати</button>`;
+          <button class="btn btn-primary btn-sm" id="sp-add-btn" style="align-self:flex-end;">${t('actions.add')}</button>`;
         body.appendChild(form);
 
         form.querySelector('#sp-add-btn').addEventListener('click', async () => {
           const teacherId = Number(form.querySelector('#sp-teacher').value);
           const weekday   = form.querySelector('#sp-weekday').value;
           const lessonNum = Number(form.querySelector('#sp-lesson').value);
-          if (!teacherId) { Toast.warning('Оберіть викладача'); return; }
+          if (!teacherId) { Toast.warning(t('modal.selectTeacher')); return; }
           const addBtn = form.querySelector('#sp-add-btn');
           addBtn.disabled = true;
           try {
@@ -1442,9 +1516,9 @@ const App = {
 
     // Footer
     const statusDot  = document.createElement('span');
-    statusDot.className = 'sm-status-dot';
+    statusDot.className = 'sm-status-dot saved';
     const statusText = document.createElement('span');
-    statusText.textContent = 'Є незбережені зміни';
+    statusText.textContent = t('modal.saved');
     const statusDiv  = document.createElement('div');
     statusDiv.className = 'sm-modal-status';
     statusDiv.append(statusDot, statusText);
@@ -1505,7 +1579,7 @@ const App = {
         delete this.cache['schedule-restrictions'];
         Toast.success(t('messages.saved'));
         statusDot.classList.add('saved');
-        statusText.textContent = 'Усі зміни збережено';
+        statusText.textContent = t('modal.saved');
       } catch (e) {
         Toast.error(e.message);
       } finally {
@@ -1595,11 +1669,11 @@ const App = {
     };
     const groupName   = id => groups.find(g => g.id === id)?.name   || `#${id}`;
     const roomName    = id => rooms.find(r => r.id === id)?.name    || `#${id}`;
-    const teacherLabel = id => {
+    const teacherName = id => {
       const teacher = teachers.find(tc => tc.id === id);
       if (!teacher) return `#${id}`;
       const user = users.find(u => u.id === teacher.user_id);
-      return user?.email?.split('@')[0] || `#${id}`;
+      return [user?.last_name, user?.first_name].filter(Boolean).join(' ') || user?.email?.split('@')[0] || `#${id}`;
     };
     const bellTime = num => {
       const bs = bellSchedules.find(b => b.lesson_number === num);
@@ -1629,29 +1703,38 @@ const App = {
       : [1, 2, 3, 4, 5];
 
     // Collect only groups that appear in this schedule
-    const scheduleGroupIds = new Set();
+    const scheduleGroupIds   = new Set();
+    const scheduleTeacherIds = new Set();
     for (const weekData of Object.values(scheduleJson)) {
       if (!weekData) continue;
       for (const dayData of Object.values(weekData)) {
         if (!dayData) continue;
         for (const lessons of Object.values(dayData)) {
           for (const l of lessons) {
-            for (const sl of (l.sub_lessons || [])) scheduleGroupIds.add(sl.group_id);
+            for (const sl of (l.sub_lessons || [])) {
+              scheduleGroupIds.add(sl.group_id);
+              scheduleTeacherIds.add(sl.teacher_id);
+            }
           }
         }
       }
     }
-    const scheduleGroups = groups.filter(g => scheduleGroupIds.has(g.id));
+    const scheduleGroups   = groups.filter(g  => scheduleGroupIds.has(g.id));
+    const scheduleTeachers = teachers.filter(tc => scheduleTeacherIds.has(tc.id));
 
-    const renderWeek = (weekData, groupId) => {
+    const renderWeek = (weekData, filterMode, filterId) => {
       let rows = '';
       for (const slot of slots) {
         let cells = `<td class="sched-slot"><span class="sched-slot-num">${slot}</span><span class="sched-slot-time">${bellTime(slot)}</span></td>`;
         for (const day of DAYS) {
           let lessons = weekData?.[day]?.[String(slot)] || [];
-          if (groupId) {
+          if (filterMode === 'group' && filterId) {
             lessons = lessons
-              .map(l => ({ ...l, sub_lessons: (l.sub_lessons || []).filter(sl => sl.group_id === groupId) }))
+              .map(l => ({ ...l, sub_lessons: (l.sub_lessons || []).filter(sl => sl.group_id === filterId) }))
+              .filter(l => l.sub_lessons.length > 0);
+          } else if (filterMode === 'teacher' && filterId) {
+            lessons = lessons
+              .map(l => ({ ...l, sub_lessons: (l.sub_lessons || []).filter(sl => sl.teacher_id === filterId) }))
               .filter(l => l.sub_lessons.length > 0);
           }
           let cellContent = '';
@@ -1659,11 +1742,18 @@ const App = {
             const subj = subjectName(lesson.subject_id);
             let details = '';
             for (const sl of (lesson.sub_lessons || [])) {
-              details += `<div class="sched-lesson-detail">
-                <span class="sched-badge sched-group">${groupName(sl.group_id)}</span>
-                <span class="sched-badge sched-teacher">${teacherLabel(sl.teacher_id)}</span>
-                <span class="sched-badge sched-room">${roomName(sl.room_id)}</span>
-              </div>`;
+              if (filterMode === 'teacher') {
+                details += `<div class="sched-lesson-detail">
+                  <span class="sched-badge sched-group">${groupName(sl.group_id)}</span>
+                  <span class="sched-badge sched-room">${roomName(sl.room_id)}</span>
+                </div>`;
+              } else {
+                details += `<div class="sched-lesson-detail">
+                  <span class="sched-badge sched-group">${groupName(sl.group_id)}</span>
+                  <span class="sched-badge sched-teacher">${teacherName(sl.teacher_id)}</span>
+                  <span class="sched-badge sched-room">${roomName(sl.room_id)}</span>
+                </div>`;
+              }
             }
             cellContent += `<div class="sched-lesson-card sched-type-${lesson.type}">
               <div class="sched-lesson-subject">${subj}</div>
@@ -1684,8 +1774,8 @@ const App = {
       </div>`;
     };
 
-    const groupOptions = scheduleGroups.map(g =>
-      `<option value="${g.id}">${g.name}</option>`).join('');
+    const groupOptions   = scheduleGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+    const teacherOptions = scheduleTeachers.map(tc => `<option value="${tc.id}">${teacherName(tc.id)}</option>`).join('');
 
     container.innerHTML = `
       <div class="sched-view">
@@ -1695,31 +1785,62 @@ const App = {
             <button class="sched-week-btn active" data-week="numerator">${t('schedule.numerator')}</button>
             <button class="sched-week-btn" data-week="denominator">${t('schedule.denominator')}</button>
           </div>
-          <div class="sched-group-filter">
-            <span>${t('schedule.groupFilter')}</span>
-            <select id="sched-group-select">
+        </div>
+        <div class="filter-bar sched-filter-bar">
+          <div class="filter-field" id="sched-filter-field">
+            <label id="sched-filter-label">${t('schedule.groupFilter')}</label>
+            <select id="sched-filter-select">
               <option value="">— ${t('schedule.allGroups')} —</option>
               ${groupOptions}
             </select>
+          </div>
+          <div class="filter-field sched-toggle-field">
+            <label>${t('schedule.viewModeLabel')}</label>
+            <div class="sched-mode-switch">
+              <span class="sched-mode-label sched-mode-label-active" id="sched-label-group">${t('schedule.groupView')}</span>
+              <button class="sm-toggle" id="sched-mode-toggle" role="switch" aria-checked="false"></button>
+              <span class="sched-mode-label" id="sched-label-teacher">${t('schedule.teacherView')}</span>
+            </div>
           </div>
         </div>
         <div id="sched-content"></div>
       </div>`;
 
-    const content = container.querySelector('#sched-content');
-    const activeGroupId = () => Number(container.querySelector('#sched-group-select').value) || 0;
-    const activeWeek = () => container.querySelector('.sched-week-btn.active')?.dataset.week || 'numerator';
+    let filterMode = 'group';
+    const content      = container.querySelector('#sched-content');
+    const activeFilterId = () => Number(container.querySelector('#sched-filter-select').value) || 0;
+    const activeWeek   = () => container.querySelector('.sched-week-btn.active')?.dataset.week || 'numerator';
 
     const showWeek = week => {
-      content.innerHTML = renderWeek(scheduleJson[week] || {}, activeGroupId());
+      content.innerHTML = renderWeek(scheduleJson[week] || {}, filterMode, activeFilterId());
       container.querySelectorAll('.sched-week-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.week === week));
     };
 
+    const modeToggle   = container.querySelector('#sched-mode-toggle');
+    const labelGroup   = container.querySelector('#sched-label-group');
+    const labelTeacher = container.querySelector('#sched-label-teacher');
+    const filterLabel  = container.querySelector('#sched-filter-label');
+    const filterSelect = container.querySelector('#sched-filter-select');
+
+    modeToggle.addEventListener('click', () => {
+      modeToggle.classList.toggle('on');
+      const isTeacher = modeToggle.classList.contains('on');
+      modeToggle.setAttribute('aria-checked', String(isTeacher));
+      filterMode = isTeacher ? 'teacher' : 'group';
+      labelGroup.classList.toggle('sched-mode-label-active', !isTeacher);
+      labelTeacher.classList.toggle('sched-mode-label-active', isTeacher);
+      filterLabel.textContent = isTeacher ? t('schedule.teacherFilter') : t('schedule.groupFilter');
+      filterSelect.innerHTML = isTeacher
+        ? `<option value="">— ${t('schedule.allTeachers')} —</option>${teacherOptions}`
+        : `<option value="">— ${t('schedule.allGroups')} —</option>${groupOptions}`;
+      showWeek(activeWeek());
+    });
+
     container.querySelectorAll('.sched-week-btn').forEach(btn =>
       btn.addEventListener('click', () => showWeek(btn.dataset.week)));
 
-    container.querySelector('#sched-group-select').addEventListener('change', () =>
+    container.querySelector('#sched-filter-select').addEventListener('change', () =>
       showWeek(activeWeek()));
 
     showWeek('numerator');
@@ -2241,7 +2362,7 @@ const App = {
         <label>${t('fields.roleType')}</label>
         <select data-field="role_type">
           <option value="">—</option>
-          ${['lecture','practical','laboratory','exam','other'].map(v =>
+          ${['assistant','lector'].map(v =>
             `<option value="${v}"${assign?.role_type===v?' selected':''}>${t('roleTypes.'+v)}</option>`
           ).join('')}
         </select>
@@ -2310,8 +2431,9 @@ const App = {
   // USERS PAGE (admin only)
   // ═══════════════════════════════════════════════════════════
   async renderUsers(main) {
-    if (this.state.user?.role !== 'admin') {
-      main.innerHTML = `<div class="alert alert-error">${t('messages.forbidden') || 'Forbidden'}</div>`;
+    const role = this.state.user?.role;
+    if (role !== 'admin' && role !== 'dean') {
+      main.innerHTML = `<div class="alert alert-error">${t('messages.forbidden')}</div>`;
       return;
     }
     this.currentMgr = null;
@@ -2324,31 +2446,38 @@ const App = {
     delete this.cache['users'];
     await this.renderEntityTab('users', main.querySelector('#users-content'));
 
-    // Inject Register button into EntityManager toolbar alongside delete
     const toolbarLeft = main.querySelector('#users-content .toolbar-left');
     if (toolbarLeft) {
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-primary btn-sm';
-      btn.id = 'add-user-btn';
-      btn.innerHTML = `<svg class="icon icon-sm"><use href="#icon-plus"/></svg> ${t('users.register')}`;
-      btn.addEventListener('click', () => this._openRegisterModal());
-      toolbarLeft.appendChild(btn);
+      if (role === 'admin') {
+        // Register button
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-primary btn-sm';
+        btn.id = 'add-user-btn';
+        btn.innerHTML = `<svg class="icon icon-sm"><use href="#icon-plus"/></svg> ${t('users.register')}`;
+        btn.addEventListener('click', () => this._openRegisterModal());
+        toolbarLeft.appendChild(btn);
+      } else {
+        // Dean: hide delete button
+        const delBtn = toolbarLeft.querySelector('#em-del-btn');
+        if (delBtn) delBtn.style.display = 'none';
+      }
     }
   },
 
   _openRegisterModal() {
     const body = document.createElement('div');
     body.innerHTML = `
-      <div class="form-field"><label>${t('users.email') || t('fields.email')} *</label>
-        <input type="email" id="reg-email"></div>
-      <div class="form-field"><label>${t('fields.firstName') || 'First name'} *</label>
+      <div class="form-field"><label>${t('fields.firstName')} *</label>
         <input type="text" id="reg-first-name"></div>
-      <div class="form-field"><label>${t('fields.lastName') || 'Last name'} *</label>
+      <div class="form-field"><label>${t('fields.lastName')} *</label>
         <input type="text" id="reg-last-name"></div>
+      <div class="form-field"><label>${t('fields.patronymic')} <span style="color:var(--text-muted);font-size:.78rem">(${t('actions.optional')})</span></label>
+        <input type="text" id="reg-patronymic"></div>
+      <div class="form-field"><label>${t('fields.email')} *</label>
+        <input type="email" id="reg-email"></div>
       <div class="form-field"><label>${t('fields.role')}</label>
         <select id="reg-role">
           <option value="teacher">${t('roles.teacher')}</option>
-          <option value="user">${t('roles.user')}</option>
           <option value="dean">${t('roles.dean')}</option>
           <option value="admin">${t('roles.admin')}</option>
         </select></div>
@@ -2371,18 +2500,21 @@ const App = {
     foot.querySelector('#reg-cancel').addEventListener('click', () => closeModal());
 
     foot.querySelector('#reg-save').addEventListener('click', async () => {
-      const email     = document.getElementById('reg-email').value.trim();
-      const firstName = document.getElementById('reg-first-name').value.trim();
-      const lastName  = document.getElementById('reg-last-name').value.trim();
-      const role      = document.getElementById('reg-role').value;
+      const email      = document.getElementById('reg-email').value.trim();
+      const firstName  = document.getElementById('reg-first-name').value.trim();
+      const lastName   = document.getElementById('reg-last-name').value.trim();
+      const patronymic = document.getElementById('reg-patronymic').value.trim() || null;
+      const role       = document.getElementById('reg-role').value;
       if (!email || !firstName || !lastName) {
-        Toast.warning(t('messages.fillRequired') || 'Fill required fields');
+        Toast.warning(t('messages.fillRequired'));
         return;
       }
       try {
         const btn = foot.querySelector('#reg-save');
         btn.disabled = true;
-        const resp = await Api.post('/api/auth/auth/invite', { email, first_name: firstName, last_name: lastName, role });
+        const payload = { email, first_name: firstName, last_name: lastName, role };
+        if (patronymic) payload.patronymic = patronymic;
+        const resp = await Api.post('/api/auth/auth/invite', payload);
         btn.disabled = false;
 
         const inviteLink = window.location.origin + (resp?.invite_link || '');
@@ -2403,7 +2535,7 @@ const App = {
           delete this.cache['users'];
           await this.renderEntityTab('users', usersContent);
           const tl = usersContent.querySelector('.toolbar-left');
-          if (tl && !tl.querySelector('#add-user-btn')) {
+          if (tl && !tl.querySelector('#add-user-btn') && this.state.user?.role === 'admin') {
             const rb = document.createElement('button');
             rb.className = 'btn btn-primary btn-sm';
             rb.id = 'add-user-btn';
@@ -2452,6 +2584,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('login-password')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('login-btn')?.click();
+  });
+
+  // Password visibility toggle on login page
+  document.getElementById('login-pw-toggle')?.addEventListener('click', () => {
+    const pw = document.getElementById('login-password');
+    const eye = document.getElementById('login-pw-eye');
+    if (pw.type === 'password') {
+      pw.type = 'text';
+      eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    } else {
+      pw.type = 'password';
+      eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
   });
 
   // Sidebar language buttons
