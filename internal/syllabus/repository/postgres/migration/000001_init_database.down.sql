@@ -1,38 +1,27 @@
-DROP TABLE IF EXISTS academic_year;
-
-DROP TABLE IF EXISTS semester;
-
-DROP TABLE IF EXISTS department;
-DROP TABLE IF EXISTS academic_year_to_department;
-
-DROP TABLE IF EXISTS room;
-DROP TABLE IF EXISTS academic_year_to_room;
-
-DROP TABLE IF EXISTS specialty;
-DROP TABLE IF EXISTS academic_year_to_specialty;
-
-DROP TABLE IF EXISTS cycle_committee;
-DROP TABLE IF EXISTS academic_year_to_cycle_committee;
-
-DROP TABLE IF EXISTS teacher;
-DROP TABLE IF EXISTS academic_year_to_teacher;
-
-DROP TABLE IF EXISTS user_info;
-
-DROP TABLE IF EXISTS discipline;
-DROP TABLE IF EXISTS academic_year_to_discipline;
-
-DROP TABLE IF EXISTS education_group;
-DROP TABLE IF EXISTS academic_year_to_education_group;
-
-DROP TABLE IF EXISTS education_group_semester;
-
-DROP TABLE IF EXISTS study_plan;
-
-DROP TABLE IF EXISTS schedule_template;
-DROP TABLE IF EXISTS event;
-DROP TABLE IF EXISTS event_rrule;
-DROP TABLE IF EXISTS workload_distribution;
-DROP TABLE IF EXISTS workload_assignment;
-DROP TABLE IF EXISTS schedule_template_setting;
+DROP TABLE IF EXISTS cycle_committee_lab_room;
+DROP TABLE IF EXISTS teacher_slot_preference;
 DROP TABLE IF EXISTS bell_schedule;
+DROP TABLE IF EXISTS schedule_restriction;
+DROP TABLE IF EXISTS schedule_template_setting;
+DROP TABLE IF EXISTS workload_assignment;
+DROP TABLE IF EXISTS workload_distribution;
+DROP TABLE IF EXISTS schedule_template;
+DROP TABLE IF EXISTS study_plan;
+DROP TABLE IF EXISTS education_group_semester;
+DROP TABLE IF EXISTS academic_year_to_education_group;
+DROP TABLE IF EXISTS education_group;
+DROP TABLE IF EXISTS academic_year_to_discipline;
+DROP TABLE IF EXISTS discipline;
+DROP TABLE IF EXISTS academic_year_to_teacher;
+DROP TABLE IF EXISTS teacher;
+DROP TABLE IF EXISTS academic_year_to_cycle_committee;
+DROP TABLE IF EXISTS cycle_committee;
+DROP TABLE IF EXISTS user_info;
+DROP TABLE IF EXISTS academic_year_to_specialty;
+DROP TABLE IF EXISTS specialty;
+DROP TABLE IF EXISTS academic_year_to_room;
+DROP TABLE IF EXISTS room;
+DROP TABLE IF EXISTS academic_year_to_department;
+DROP TABLE IF EXISTS department;
+DROP TABLE IF EXISTS semester;
+DROP TABLE IF EXISTS academic_year;
