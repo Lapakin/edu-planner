@@ -10,7 +10,7 @@ Edu-planner is an application that handles scheduling, curriculum management, an
 First, download the project files by running the following command:
 
 ```bash
-git clone [https://github.com/Lapakin/edu-planner.git](https://github.com/Lapakin/edu-planner.git)
+git clone https://github.com/Lapakin/edu-planner.git
 
 ```
 
