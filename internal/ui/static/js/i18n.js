@@ -90,6 +90,17 @@ const TRANSLATIONS = {
       copied: "Скопійовано!",
     },
 
+    validation: {
+      academicYearDateOrder: "Дата початку навчального року має бути раніше дати завершення.",
+      semesterDateOrder: "Дата початку семестру має бути раніше дати завершення.",
+      educationDateOrder: "Дата початку навчання групи має бути раніше дати завершення.",
+      timeOrder: "Час початку пари має бути раніше часу завершення.",
+      duplicateLessonNumber: "Номер пари повинен бути унікальним у межах розкладу дзвінків.",
+      duplicateName: "Запис з такою назвою вже існує (перевірте регістр).",
+      duplicateShortName: "Запис зі скороченою назвою вже існує (перевірте регістр).",
+      duplicateSpecialtyCode: "Спеціальність з таким кодом вже існує.",
+    },
+
     status: {
       active: "Активний",
       inactive: "Неактивний",
@@ -547,6 +558,17 @@ const TRANSLATIONS = {
       fillRequired: "Please fill in all required fields.",
       forbidden: "Access denied.",
       copied: "Copied!",
+    },
+
+    validation: {
+      academicYearDateOrder: "Academic year start date must be earlier than the end date.",
+      semesterDateOrder: "Semester start date must be earlier than the end date.",
+      educationDateOrder: "Group education start date must be earlier than the end date.",
+      timeOrder: "Lesson start time must be earlier than the end time.",
+      duplicateLessonNumber: "Lesson number must be unique within the bell schedule.",
+      duplicateName: "A record with this name already exists (check the case).",
+      duplicateShortName: "A record with this short name already exists (check the case).",
+      duplicateSpecialtyCode: "A specialty with this code already exists.",
     },
 
     status: {
