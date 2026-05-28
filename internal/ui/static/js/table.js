@@ -149,9 +149,9 @@ class EntityManager {
             op.textContent = f.ref ? (o[f.refLabel] || o.name || o.id) : t(o.labelKey);
             input.appendChild(op);
           });
-          // Pre-populate from global year/semester state
-          if (f.key === 'academic_year_id' && App.state.yearId) input.value = App.state.yearId;
-          if (f.key === 'semester_id' && App.state.semesterId) input.value = App.state.semesterId;
+          // Pre-populate from global year/semester state (unless noAutoFill is set)
+          if (f.key === 'academic_year_id' && App.state.yearId && !f.noAutoFill) input.value = App.state.yearId;
+          if (f.key === 'semester_id' && App.state.semesterId && !f.noAutoFill) input.value = App.state.semesterId;
         } else {
           input = document.createElement('input');
           input.type = 'text';
@@ -215,7 +215,7 @@ class EntityManager {
     config.columns.forEach(col => {
       thHtml += `<th>${t(col.labelKey)}</th>`;
     });
-    if (config.extraActions && config.extraActions.length > 0) thHtml += '<th></th>';
+    if (config.extraActions && config.extraActions.length > 0) thHtml += `<th>${t('actions.actions')}</th>`;
     thHtml += '</tr>';
     thead.innerHTML = thHtml;
     table.appendChild(thead);
@@ -280,7 +280,8 @@ class EntityManager {
         config.extraActions.forEach(act => {
           const btn = document.createElement('button');
           btn.className = act.classFn ? act.classFn(row) : 'btn btn-sm btn-secondary';
-          btn.textContent = act.labelFn ? act.labelFn(row) : (act.label || '');
+          btn.innerHTML = act.labelFn ? act.labelFn(row) : (act.label || '');
+          if (act.titleFn) btn.title = act.titleFn(row);
           if (act.disabledFn && act.disabledFn(row)) btn.disabled = true;
           btn.addEventListener('click', (e) => { e.stopPropagation(); act.handler(row, this); });
           tdAct.appendChild(btn);
