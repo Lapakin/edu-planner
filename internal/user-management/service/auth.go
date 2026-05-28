@@ -432,6 +432,11 @@ func (s *authSvc) Login(ctx context.Context, email string, password string) (str
 		return "", err
 	}
 
+	if !cred.User.IsActive {
+		err = errors.New("account deactivated")
+		return "", err
+	}
+
 	tokenString, err := jwt.GenerateToken(int64(cred.User.ID), cred.User.Email, cred.User.Role)
 	if err != nil {
 		return "", err

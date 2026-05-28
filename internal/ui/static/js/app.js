@@ -449,6 +449,11 @@ const App = {
 
   async toggleUser(row, mgr) {
     const activating = !row.is_active;
+    if (!activating) {
+      const name = [row.first_name, row.last_name].filter(Boolean).join(' ') || row.email;
+      const ok = await confirmDialog(t('users.deactivateConfirm').replace('{name}', name));
+      if (!ok) return;
+    }
     const path = `/api/auth/users/${row.id}/${activating ? 'activate' : 'deactivate'}`;
     try {
       await Api.post(path, null);
@@ -486,9 +491,11 @@ const App = {
           </div>
         </div>
       </div>
+      <div id="home-active-year"></div>
       <div id="home-active-tpl"></div>
       <div class="home-cards" id="home-stats"></div>`;
 
+    this._renderActiveYearInfo(main.querySelector('#home-active-year'));
     this._renderActiveTemplate(main.querySelector('#home-active-tpl'));
 
     if (user?.role === 'teacher') return;
@@ -519,6 +526,33 @@ const App = {
         <div class="stat-label">${t(card.i18nKey)}</div>`;
       statsEl.appendChild(div);
     });
+  },
+
+  _renderActiveYearInfo(container) {
+    const years = this.cache['academic-years'] || [];
+    const activeYear = years.find(y => y.is_active);
+    if (activeYear) {
+      const startDate = activeYear.start_date?.slice(0, 10) || '';
+      const endDate   = activeYear.end_date?.slice(0, 10)   || '';
+      container.innerHTML = `
+        <div class="card" style="margin:16px 0 12px;padding:12px 16px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg class="icon" style="color:var(--success);flex-shrink:0"><use href="#icon-calendar"/></svg>
+            <span style="font-weight:600">${t('home.activeYear')}:</span>
+            <span>${activeYear.name}</span>
+            <span style="color:var(--text-muted);font-size:.85rem">${startDate} – ${endDate}</span>
+          </div>
+        </div>`;
+    } else {
+      container.innerHTML = `
+        <div class="card" style="margin:16px 0 12px;padding:12px 16px;border-color:var(--warning)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg class="icon" style="color:var(--warning);flex-shrink:0"><use href="#icon-calendar"/></svg>
+            <span style="color:var(--warning)">${t('home.noActiveYear')}</span>
+            <a href="#/academic-settings/academic-years" style="color:var(--accent)">${t('home.createYear')}</a>
+          </div>
+        </div>`;
+    }
   },
 
   async _renderActiveTemplate(container) {
@@ -1039,10 +1073,11 @@ const App = {
     });
 
     // Footer
+    const isNew = !setting.id || setting.id === 0;
     const statusDot = document.createElement('span');
-    statusDot.className = 'sm-status-dot saved';
+    statusDot.className = isNew ? 'sm-status-dot' : 'sm-status-dot saved';
     const statusText = document.createElement('span');
-    statusText.textContent = t('modal.saved');
+    statusText.textContent = isNew ? t('modal.unsaved') : t('modal.saved');
     const statusDiv = document.createElement('div');
     statusDiv.className = 'sm-modal-status';
     statusDiv.append(statusDot, statusText);
@@ -1537,10 +1572,11 @@ const App = {
     renderMainView();
 
     // Footer
+    const isNewRestrict = !restriction.id || restriction.id === 0;
     const statusDot  = document.createElement('span');
-    statusDot.className = 'sm-status-dot saved';
+    statusDot.className = isNewRestrict ? 'sm-status-dot' : 'sm-status-dot saved';
     const statusText = document.createElement('span');
-    statusText.textContent = t('modal.saved');
+    statusText.textContent = isNewRestrict ? t('modal.unsaved') : t('modal.saved');
     const statusDiv  = document.createElement('div');
     statusDiv.className = 'sm-modal-status';
     statusDiv.append(statusDot, statusText);
@@ -1624,6 +1660,7 @@ const App = {
       saveBar.innerHTML = `
         <span class="gen-save-label">${t('generate.success')}</span>
         <input type="text" class="gen-name-input" placeholder="${t('generate.saveNamePlaceholder')}">
+        <button class="btn btn-secondary btn-sm" id="gen-view-btn">${t('actions.view')}</button>
         <button class="btn btn-success btn-sm" id="gen-save-btn">
           <svg class="icon"><use href="#icon-save"/></svg>
           ${t('generate.saveBtn')}
@@ -1633,6 +1670,10 @@ const App = {
       const scheduleEl = document.createElement('div');
       mainEl.appendChild(scheduleEl);
       await this._renderScheduleData(data, scheduleEl);
+
+      saveBar.querySelector('#gen-view-btn').addEventListener('click', () => {
+        this.viewScheduleTemplate(data);
+      });
 
       saveBar.querySelector('#gen-save-btn').addEventListener('click', async () => {
         await this._saveGeneratedSchedule(Number(semId), data, saveBar);
@@ -1650,14 +1691,84 @@ const App = {
       const payload = { semester_id: semId, data: scheduleData };
       const name = nameInput?.value.trim();
       if (name) payload.name = name;
-      await Api.post('/api/syllabus/schedule-templates/save', payload);
+      const savedTemplate = await Api.post('/api/syllabus/schedule-templates/save', payload);
       Toast.success(t('generate.savedSuccess'));
       delete this.cache['schedule-templates'];
+      if (savedTemplate?.id) {
+        this._openActivateScheduleModal(savedTemplate.id, semId, scheduleData);
+      }
     } catch (e) {
       Toast.error(e.message);
     } finally {
       btn.disabled = false;
     }
+  },
+
+  async _openActivateScheduleModal(templateId, semId, scheduleData) {
+    const groupIds = new Set();
+    let totalLessons = 0;
+    for (const weekData of Object.values(scheduleData)) {
+      if (!weekData || typeof weekData !== 'object') continue;
+      for (const dayData of Object.values(weekData)) {
+        if (!dayData || typeof dayData !== 'object') continue;
+        for (const lessons of Object.values(dayData)) {
+          if (!Array.isArray(lessons)) continue;
+          totalLessons += lessons.length;
+          for (const l of lessons) {
+            for (const sl of (l.sub_lessons || [])) {
+              groupIds.add(sl.group_id);
+            }
+          }
+        }
+      }
+    }
+
+    await this.ensureCache('semesters');
+    const sem = (this.cache['semesters'] || []).find(s => s.id === Number(semId));
+    const semText = sem
+      ? `${sem.period_start?.slice(0,10)} – ${sem.period_end?.slice(0,10)}`
+      : `#${semId}`;
+
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <p style="margin-bottom:16px;color:var(--text-muted)">${t('generate.activateConfirmText')}</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="font-weight:500">${t('generate.activateSemester')}</span>
+          <span>${semText}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="font-weight:500">${t('generate.activateGroups')}</span>
+          <span>${groupIds.size}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <span style="font-weight:500">${t('generate.activateLessons')}</span>
+          <span>${totalLessons}</span>
+        </div>
+      </div>`;
+
+    const foot = document.createElement('div');
+    foot.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;width:100%';
+    foot.innerHTML = `
+      <button class="btn btn-secondary" id="act-cancel-btn">${t('actions.cancel')}</button>
+      <button class="btn btn-primary" id="act-confirm-btn">${t('generate.activateBtn')}</button>`;
+
+    openModal(t('generate.activateTitle'), body, foot);
+
+    foot.querySelector('#act-cancel-btn').addEventListener('click', () => closeModal());
+    foot.querySelector('#act-confirm-btn').addEventListener('click', async () => {
+      const confirmBtn = foot.querySelector('#act-confirm-btn');
+      confirmBtn.disabled = true;
+      try {
+        await Api.post(`/api/syllabus/schedule-templates/${templateId}/activate`, null);
+        Toast.success(t('generate.activateSuccess'));
+        delete this.cache['schedule-templates'];
+        closeModal();
+      } catch (e) {
+        Toast.error(e.message);
+        confirmBtn.disabled = false;
+      }
+    });
   },
 
   async viewScheduleTemplate(row) {
@@ -2117,14 +2228,22 @@ const App = {
   // ═══════════════════════════════════════════════════════════
   async renderWorkloadMasterDetail(container) {
     this.currentMgr = null;
-    await this.ensureCache('study-plans');
+
+    // Fetch study-plans filtered by the selected academic year
+    let studyPlans = [];
+    try {
+      const spPath = ENTITY_CONFIGS['study-plans'].apiPath +
+        (this.state.yearId ? `?academic_year_id=${this.state.yearId}` : '');
+      studyPlans = await Api.get(spPath) || [];
+      this.cache['study-plans'] = studyPlans;
+    } catch { studyPlans = []; }
+
     await this.ensureCache('groups');
     await this.ensureCache('specialties');
     await this.ensureCache('disciplines');
     await this.ensureCache('teachers');
     await this.ensureTeacherUsersCache();
 
-    const studyPlans  = this.cache['study-plans']   || [];
     const groups      = this.cache['groups']        || [];
     const specialties = this.cache['specialties']   || [];
     const disciplines = this.cache['disciplines']   || [];
@@ -2136,6 +2255,14 @@ const App = {
     try {
       distributions = await Api.get(ENTITY_CONFIGS['workload-distributions'].apiPath) || [];
       assignments   = await Api.get(ENTITY_CONFIGS['workload-assignments'].apiPath)   || [];
+
+      // Narrow to the current academic year via study plan IDs
+      if (this.state.yearId) {
+        const spIds   = new Set(studyPlans.map(sp => sp.id));
+        distributions = distributions.filter(d => spIds.has(d.study_plan_id));
+        const distIds = new Set(distributions.map(d => d.id));
+        assignments   = assignments.filter(a => distIds.has(a.workload_distribution_id));
+      }
     } catch(e) {
       container.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
       return;
@@ -2591,8 +2718,15 @@ document.addEventListener('DOMContentLoaded', () => {
       App.setupHashRouter();
       location.hash = '#/home';
     } catch (e) {
-      errEl.textContent = e.message === 'unauthorized' || e.message.includes('401')
-        ? t('auth.loginError') : e.message;
+      let errMsg;
+      if (e.message === 'unauthorized' || e.message.includes('401')) {
+        errMsg = t('auth.loginError');
+      } else if (e.message === 'account deactivated') {
+        errMsg = t('auth.accountDeactivated');
+      } else {
+        errMsg = e.message;
+      }
+      errEl.textContent = errMsg;
       errEl.classList.remove('hidden');
     }
   });

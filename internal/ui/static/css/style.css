@@ -985,6 +985,36 @@ a.nav-item-sub .nav-icon {
   border-color: #d97706;
 }
 
+.btn-outline-secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+.btn-outline-secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: #c4cdd6;
+}
+
+.btn-outline-warning {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #b45309;
+}
+.btn-outline-warning:hover:not(:disabled) {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.btn-outline-success {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+.btn-outline-success:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #4ade80;
+}
+
 .btn-sm {
   height: 28px;
   padding: 0 10px;
@@ -993,6 +1023,11 @@ a.nav-item-sub .nav-icon {
 
 .btn-sm svg {
   width: 13px; height: 13px;
+}
+
+.btn-icon-sm {
+  width: 28px;
+  padding: 0;
 }
 
 .btn-icon {

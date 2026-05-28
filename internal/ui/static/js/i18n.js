@@ -20,11 +20,13 @@ const TRANSLATIONS = {
       loginTitle: "Вхід до системи",
       loginSubtitle: "Введіть дані облікового запису для продовження.",
       emailLabel: "Електронна пошта",
-      emailPlaceholder: "ви@example.com",
+      emailPlaceholder: "example@example.com",
       passwordLabel: "Пароль",
       loginBtn: "Увійти",
       logoutBtn: "Вийти",
       loginError: "Невірна електронна пошта або пароль.",
+      accountDeactivated:
+        "Ваш обліковий запис деактивовано. Зверніться до адміністратора.",
       setPasswordTitle: "Встановлення пароля",
       setPasswordBtn: "Встановити пароль",
       setPasswordOk: "Пароль успішно встановлено. Входимо…",
@@ -68,6 +70,7 @@ const TRANSLATIONS = {
       optional: "необов'язково",
       copy: "Копіювати",
       back: "Назад",
+      actions: "Дії",
     },
 
     messages: {
@@ -377,12 +380,23 @@ const TRANSLATIONS = {
       savedSuccess: "Шаблон розкладу успішно збережено!",
       configTitle: "Налаштування генерації",
       settingsBtn: "Налаштування та обмеження",
+      activateTitle: "Активувати розклад",
+      activateConfirmText:
+        "Розклад збережено. Перевірте параметри та активуйте його для використання.",
+      activateSemester: "Семестр",
+      activateGroups: "Груп охоплено",
+      activateLessons: "Пар заплановано",
+      activateBtn: "Активувати",
+      activateSuccess: "Розклад успішно активовано!",
     },
 
     home: {
       activeTemplate: "Активний шаблон розкладу",
       noActiveTemplate:
         "Активний шаблон розкладу відсутній. Перейдіть до розділу «Розклад» для генерації.",
+      activeYear: "Поточний навчальний рік",
+      noActiveYear: "Активний навчальний рік відсутній.",
+      createYear: "Створити навчальний рік",
     },
 
     roleTypes: {
@@ -444,6 +458,8 @@ const TRANSLATIONS = {
       pendingStatus: "Очікує активації",
       resetInvite: "Запросити",
       resetPassword: "Скинути пароль",
+      deactivateConfirm:
+        "Користувач {name} більше не зможе входити в систему. Підтвердити?",
     },
   },
 
@@ -463,11 +479,13 @@ const TRANSLATIONS = {
       loginTitle: "Sign in",
       loginSubtitle: "Enter your account credentials to continue.",
       emailLabel: "Email address",
-      emailPlaceholder: "you@example.com",
+      emailPlaceholder: "example@example.com",
       passwordLabel: "Password",
       loginBtn: "Sign in",
       logoutBtn: "Sign out",
       loginError: "Invalid email address or password.",
+      accountDeactivated:
+        "Your account has been deactivated. Please contact the administrator.",
       setPasswordTitle: "Set password",
       setPasswordBtn: "Set password",
       setPasswordOk: "Password set successfully. Signing in…",
@@ -511,6 +529,7 @@ const TRANSLATIONS = {
       optional: "optional",
       copy: "Copy",
       back: "Back",
+      actions: "Actions",
     },
 
     messages: {
@@ -817,12 +836,23 @@ const TRANSLATIONS = {
       savedSuccess: "Schedule template saved successfully!",
       configTitle: "Generation settings",
       settingsBtn: "Settings & restrictions",
+      activateTitle: "Activate schedule",
+      activateConfirmText:
+        "The schedule has been saved. Review the parameters and activate it for use.",
+      activateSemester: "Semester",
+      activateGroups: "Groups covered",
+      activateLessons: "Lessons planned",
+      activateBtn: "Activate",
+      activateSuccess: "Schedule activated successfully!",
     },
 
     home: {
       activeTemplate: "Active schedule template",
       noActiveTemplate:
         "No active schedule template. Go to the «Schedule» section to generate one.",
+      activeYear: "Current academic year",
+      noActiveYear: "No active academic year.",
+      createYear: "Create academic year",
     },
 
     roleTypes: {
@@ -884,6 +914,8 @@ const TRANSLATIONS = {
       pendingStatus: "Pending",
       resetInvite: "Invite",
       resetPassword: "Reset password",
+      deactivateConfirm:
+        "User {name} will no longer be able to log in. Confirm?",
     },
   },
 };

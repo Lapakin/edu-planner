@@ -185,10 +185,10 @@ const ENTITY_CONFIGS = {
     i18nKey: 'entities.studyPlans',
     autoYearFilter: true,
     columns: [
-      { key: 'specialty_id',  type: 'select', labelKey: 'fields.specialty',
-        ref: 'specialties', refLabel: 'name', required: true },
       { key: 'discipline_id', type: 'select', labelKey: 'fields.discipline',
         ref: 'disciplines', refLabel: 'name', required: true },
+      { key: 'specialty_id',  type: 'select', labelKey: 'fields.specialty',
+        ref: 'specialties', refLabel: 'name', required: true },
       { key: 'semester_number',  type: 'number', labelKey: 'fields.semesterNumber',  required: true },
       { key: 'lectures',         type: 'number', labelKey: 'fields.lecturesHours' },
       { key: 'laboratory',       type: 'number', labelKey: 'fields.laboratoryHours' },
@@ -304,7 +304,12 @@ const ENTITY_CONFIGS = {
       { key: 'last_name',   type: 'text',  labelKey: 'fields.lastName',   readonly: true },
       { key: 'patronymic',  type: 'text',  labelKey: 'fields.patronymic', readonly: true },
       { key: 'email',       type: 'text',  labelKey: 'fields.email',      readonly: true },
-      { key: 'role',        type: 'text',  labelKey: 'fields.role',       readonly: true },
+      { key: 'role', type: 'select', labelKey: 'fields.role', readonly: true,
+        options: [
+          { value: 'admin',   labelKey: 'roles.admin' },
+          { value: 'dean',    labelKey: 'roles.dean' },
+          { value: 'teacher', labelKey: 'roles.teacher' },
+        ] },
       { key: 'is_active',   type: 'badge', labelKey: 'fields.isActive',   readonly: true,
         values: { true: 'active', false: 'inactive' } },
     ],
@@ -313,9 +318,23 @@ const ENTITY_CONFIGS = {
     noEdit: true,
     extraActions: [
       {
-        labelFn: (row) => row.is_active ? t('users.resetPassword') : t('users.resetInvite'),
-        classFn: () => App.state.user?.role !== 'admin' ? 'hidden' : 'btn btn-sm btn-secondary',
+        labelFn: () => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>`,
+        titleFn: (row) => row.is_active ? t('users.resetPassword') : t('users.resetInvite'),
+        classFn: () => App.state.user?.role !== 'admin' ? 'hidden' : 'btn btn-sm btn-icon-sm btn-outline-secondary',
         handler: (row) => row.is_active ? App.resetUserPassword(row) : App.resetUserInvite(row),
+      },
+      {
+        labelFn: (row) => row.is_active
+          ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>`
+          : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`,
+        titleFn: (row) => row.is_active ? t('actions.deactivate') : t('actions.activate'),
+        classFn: (row) => {
+          const role = App.state.user?.role;
+          if (role !== 'admin' && role !== 'dean') return 'hidden';
+          if (App.state.user?.user_id && Number(row.id) === Number(App.state.user.user_id)) return 'hidden';
+          return row.is_active ? 'btn btn-sm btn-icon-sm btn-outline-warning' : 'btn btn-sm btn-icon-sm btn-outline-success';
+        },
+        handler: (row, mgr) => App.toggleUser(row, mgr),
       },
     ],
   },
@@ -332,7 +351,7 @@ const ENTITY_CONFIGS = {
     ],
     filters: [
       { key: 'semester_id', type: 'select', labelKey: 'fields.semester',
-        ref: 'semesters', refLabel: 'id' },
+        ref: 'semesters', refLabel: 'id', noAutoFill: true },
     ],
     noEdit: true,
     noCreate: true,
