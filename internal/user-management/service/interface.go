@@ -23,6 +23,7 @@ type UserSvc interface {
 	DeactivateUser(ctx context.Context, claims *jwt.Claims, userID uint64) error
 	GetUserByID(ctx context.Context, userID uint64) (*domain.User, error)
 	FetchUsers(ctx context.Context, filters f.Filters) (domain.Users, error)
+	AttachUsers(ctx context.Context, academicYearID uint64, userIDs []uint64) error
 }
 
 type AuthSvc interface {

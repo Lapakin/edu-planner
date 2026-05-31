@@ -2834,6 +2834,16 @@ const App = {
         const payload = { email, first_name: firstName, last_name: lastName, role };
         if (patronymic) payload.patronymic = patronymic;
         const resp = await Api.post('/api/auth/auth/invite', payload);
+
+        // Attach the newly invited user to the active academic year so they
+        // show up under it (GET /users is scoped by academic_year_id).
+        const newUserId = resp?.user?.id;
+        if (newUserId && this.state.yearId) {
+          await Api.post('/api/auth/users/attach', {
+            academic_year_id: Number(this.state.yearId),
+            user_ids: [newUserId],
+          });
+        }
         btn.disabled = false;
 
         const inviteLink = window.location.origin + (resp?.invite_link || '');
