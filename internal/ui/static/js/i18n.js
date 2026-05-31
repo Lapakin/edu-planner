@@ -416,6 +416,16 @@ const TRANSLATIONS = {
       totalHours: "Усього годин",
       assignedHours: "Призначено",
       remainingHours: "Залишилось",
+      totalHours: "Загальні години",
+      byGroups: "За групами",
+      byTeachers: "За викладачами",
+      status: "Статус",
+      assigned: "Призначено",
+      notAssigned: "Не призначено",
+      hours: "Години",
+      semShort: "Сем.",
+      total: "Всього",
+      allSemesters: "Всі семестри",
     },
 
     schedule: {
@@ -876,6 +886,15 @@ const TRANSLATIONS = {
       totalHours: "Total hours",
       assignedHours: "Assigned",
       remainingHours: "Remaining",
+      byGroups: "By groups",
+      byTeachers: "By teachers",
+      status: "Status",
+      assigned: "Assigned",
+      notAssigned: "Not assigned",
+      hours: "Hours",
+      semShort: "Sem.",
+      total: "Total",
+      allSemesters: "All semesters",
     },
 
     schedule: {

@@ -782,7 +782,7 @@ const App = {
 
     // Load required caches for relations
     const refsNeeded = new Set();
-    cfg.columns.forEach(c => { if (c.ref) refsNeeded.add(c.ref); });
+    cfg.columns.forEach(c => { if (c.ref) refsNeeded.add(c.ref); if (c.optionsCache) refsNeeded.add(c.optionsCache); });
     cfg.filters?.forEach(f => { if (f.ref) refsNeeded.add(f.ref); });
 
     if (refsNeeded.has('users')) await this.ensureUsersCache();
@@ -2364,6 +2364,9 @@ const App = {
             </div>
           </div>
           <div class="gmd-footer">
+            <button class="btn btn-secondary btn-sm" id="wmd-totals">
+              <svg class="icon icon-sm"><use href="#icon-calendar"/></svg>${t('workload.totalHours')}
+            </button>
             <button class="btn btn-primary btn-sm" id="wmd-add">
               <svg class="icon icon-sm"><use href="#icon-plus"/></svg>${t('actions.add')}
             </button>
@@ -2381,6 +2384,10 @@ const App = {
           if (created?.[0]) selectedId = created[0].id;
           redraw();
         });
+      });
+
+      container.querySelector('#wmd-totals')?.addEventListener('click', () => {
+        this._openWorkloadTotalsModal({ groups, distributions, assignments, studyPlans, teacherName });
       });
 
       container.querySelector('#wmd-edit-dist')?.addEventListener('click', () => {
@@ -2545,6 +2552,163 @@ const App = {
         Toast.success(t('messages.saved'));
       } catch(e) { Toast.error(e.message); foot.querySelector('#wassign-save').disabled = false; }
     });
+  },
+
+  _openWorkloadTotalsModal({ groups, distributions, assignments, studyPlans, teacherName }) {
+    const distHours = (d) =>
+      (d.classroom_work || 0) + (d.laboratory || 0) + (d.practical || 0) + (d.exam || 0);
+
+    const distById = new Map(distributions.map(d => [d.id, d]));
+    const planById = new Map(studyPlans.map(p => [p.id, p]));
+    // Semester number of a distribution, taken from its study plan
+    const distSem = (d) => {
+      const p = d ? planById.get(d.study_plan_id) : null;
+      return (p && p.semester_number != null) ? p.semester_number : null;
+    };
+    // Semester number of an assignment, via its distribution
+    const assignSem = (a) => distSem(distById.get(a.workload_distribution_id));
+
+    // Distributions grouped by group id
+    const distsByGroup = new Map();
+    distributions.forEach(d => {
+      if (!distsByGroup.has(d.group_id)) distsByGroup.set(d.group_id, []);
+      distsByGroup.get(d.group_id).push(d);
+    });
+
+    // Which semester numbers a specialty offers (from study plans) — lets us show
+    // only the semesters a given group actually has (groups differ in length).
+    const specHasSem = new Set();
+    studyPlans.forEach(p => {
+      if (p.semester_number != null && p.specialty_id != null) {
+        specHasSem.add(`${p.specialty_id}:${p.semester_number}`);
+      }
+    });
+
+    // Distinct semester numbers available across the year — drives the filter
+    const semNumbers = [...new Set(
+      studyPlans.map(p => p.semester_number).filter(n => n != null)
+    )].sort((a, b) => a - b);
+
+    // ---- Groups: assigned vs not + hours, narrowed to the selected semester ----
+    const groupRowsFor = (sem) => {
+      const rows = groups.filter(g => {
+        if (sem === 'all') return true;
+        // show the group only if its specialty has this semester, or it already
+        // has a distribution placed there (data-consistency safety net)
+        if (specHasSem.has(`${g.specialty_id}:${sem}`)) return true;
+        return (distsByGroup.get(g.id) || []).some(d => distSem(d) === sem);
+      }).map(g => {
+        const ds = (distsByGroup.get(g.id) || [])
+          .filter(d => sem === 'all' || distSem(d) === sem);
+        return {
+          name: g.name || `#${g.id}`,
+          assigned: ds.length > 0,
+          hours: ds.reduce((s, d) => s + distHours(d), 0),
+        };
+      });
+      rows.sort((a, b) => (a.assigned === b.assigned)
+        ? a.name.localeCompare(b.name)
+        : (a.assigned ? -1 : 1));
+      return rows;
+    };
+
+    // ---- Teachers: total hours, narrowed to the selected semester ----
+    const teacherRowsFor = (sem) => {
+      const byTeacher = new Map(); // teacher_id -> hours
+      assignments.forEach(a => {
+        if (sem !== 'all' && assignSem(a) !== sem) return;
+        byTeacher.set(a.teacher_id,
+          (byTeacher.get(a.teacher_id) || 0) + (a.assigned_hours || 0));
+      });
+      return [...byTeacher.entries()]
+        .map(([tid, hours]) => ({ name: teacherName(tid), hours }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    };
+
+    const renderGroups = (rows) => `
+      <div class="gmd-sems-table">
+        <div class="gmd-sems-head" style="grid-template-columns:1fr 110px 90px">
+          <span>${t('fields.group')}</span><span>${t('workload.status')}</span><span style="text-align:right">${t('workload.hours')}</span>
+        </div>
+        ${rows.length === 0 ? `<div class="gmd-empty">${t('messages.noData')}</div>` :
+          rows.map(r => `
+            <div class="gmd-sems-row" style="grid-template-columns:1fr 110px 90px">
+              <span>${r.name}</span>
+              <span><span class="badge ${r.assigned ? 'badge-success' : 'badge-neutral'}">${
+                r.assigned ? t('workload.assigned') : t('workload.notAssigned')}</span></span>
+              <span style="text-align:right">${r.hours || '—'}</span>
+            </div>`).join('')}
+      </div>`;
+
+    const renderTeachers = (rows) => `
+      <div class="gmd-sems-table">
+        <div class="gmd-sems-head" style="grid-template-columns:1fr 90px">
+          <span>${t('fields.teacher')}</span><span style="text-align:right">${t('workload.hours')}</span>
+        </div>
+        ${rows.length === 0 ? `<div class="gmd-empty">${t('messages.noData')}</div>` :
+          rows.map(r => `
+            <div class="gmd-sems-row" style="grid-template-columns:1fr 90px">
+              <span>${r.name}</span>
+              <span style="text-align:right;font-weight:600">${r.hours || '—'}</span>
+            </div>`).join('')}
+      </div>`;
+
+    let mode = 'groups';      // 'groups' | 'teachers'
+    let sem  = 'all';         // 'all' | <number>
+    let rows = [];
+    const body = document.createElement('div');
+
+    const semLabel = (s) => s === 'all' ? t('workload.allSemesters') : `${t('workload.semShort')} ${s}`;
+
+    const draw = () => {
+      rows = mode === 'groups' ? groupRowsFor(sem) : teacherRowsFor(sem);
+      body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+          <div class="sched-mode-switch">
+            <span class="sched-mode-label${mode === 'groups' ? ' sched-mode-label-active' : ''}">${t('workload.byGroups')}</span>
+            <button class="sm-toggle${mode === 'teachers' ? ' on' : ''}" id="wt-toggle" type="button" aria-label="toggle"></button>
+            <span class="sched-mode-label${mode === 'teachers' ? ' sched-mode-label-active' : ''}">${t('workload.byTeachers')}</span>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;margin-left:auto">
+            <span class="sched-mode-label">${t('fields.semesterNumber')}</span>
+            <select class="sm-select" id="wt-sem">
+              <option value="all"${sem === 'all' ? ' selected' : ''}>${t('workload.allSemesters')}</option>
+              ${semNumbers.map(n => `<option value="${n}"${sem === n ? ' selected' : ''}>${semLabel(n)}</option>`).join('')}
+            </select>
+          </label>
+        </div>
+        <div id="wt-content">${mode === 'groups' ? renderGroups(rows) : renderTeachers(rows)}</div>`;
+
+      body.querySelector('#wt-toggle').addEventListener('click', () => {
+        mode = mode === 'groups' ? 'teachers' : 'groups';
+        draw(); updateFoot();
+      });
+      body.querySelector('#wt-sem').addEventListener('change', (e) => {
+        sem = e.target.value === 'all' ? 'all' : Number(e.target.value);
+        draw(); updateFoot();
+      });
+    };
+
+    const foot = document.createElement('div');
+    foot.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;';
+    const footInfo = document.createElement('span');
+    footInfo.style.cssText = 'font-size:.82rem;color:var(--text-muted)';
+    const footClose = document.createElement('button');
+    footClose.className = 'btn btn-secondary';
+    footClose.textContent = t('actions.close');
+    footClose.addEventListener('click', () => closeModal());
+    foot.append(footInfo, footClose);
+    const updateFoot = () => {
+      const scope = semLabel(sem);
+      footInfo.textContent = mode === 'groups'
+        ? `${semLabel(sem)} · ${t('workload.assigned')}: ${rows.filter(r => r.assigned).length} / ${rows.length}`
+        : `${scope} · ${t('fields.teacher')}: ${rows.length}`;
+    };
+
+    draw();
+    openModal(t('workload.totalHours'), body, foot);
+    document.getElementById('modal').classList.add('modal-lg');
+    updateFoot();
   },
 
   async _openTransferToWorkloadModal(studyPlan) {
