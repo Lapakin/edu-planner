@@ -152,6 +152,7 @@ const TRANSLATIONS = {
       creditHours: "Залік (год.)",
       classroomWork: "Аудиторна робота (год.)",
       semesterNumber: "Номер семестру",
+      total: "Усього",
       educationalComponent: "Навчальний компонент",
       studyPlan: "Навчальний план",
       workloadDistribution: "Розподіл навантаження",
@@ -412,6 +413,9 @@ const TRANSLATIONS = {
     workload: {
       transfer: "До навантаження",
       transferGroup: "Оберіть групу",
+      totalHours: "Усього годин",
+      assignedHours: "Призначено",
+      remainingHours: "Залишилось",
     },
 
     schedule: {
@@ -611,6 +615,7 @@ const TRANSLATIONS = {
       creditHours: "Credit (hrs)",
       classroomWork: "Classroom work (hrs)",
       semesterNumber: "Semester number",
+      total: "Total",
       educationalComponent: "Educational component",
       studyPlan: "Study plan",
       workloadDistribution: "Workload distribution",
@@ -868,6 +873,9 @@ const TRANSLATIONS = {
     workload: {
       transfer: "To workload",
       transferGroup: "Select group",
+      totalHours: "Total hours",
+      assignedHours: "Assigned",
+      remainingHours: "Remaining",
     },
 
     schedule: {

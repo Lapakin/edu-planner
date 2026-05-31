@@ -1288,6 +1288,33 @@ table.entity-table tbody tr:hover {
   background: var(--surface-2);
 }
 
+/* Totals footer */
+table.entity-table tfoot {
+  position: sticky;
+  bottom: 0;
+  z-index: 9;
+}
+
+table.entity-table tfoot tr.row-totals td {
+  background: var(--surface-2);
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+table.entity-table tfoot tr.row-totals td.cell-total-label {
+  font-weight: 700;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+}
+
+table.entity-table tfoot tr.row-totals td.cell-total {
+  color: var(--accent);
+}
+
 /* Row states */
 table.entity-table tr.row-changed {
   background: var(--changed-bg) !important;
@@ -2797,6 +2824,12 @@ td.sched-cell:not(:has(.sched-lesson-card)) {
 .gmd-sems-row { display:grid; grid-template-columns:1fr 1fr 40px; padding:9px 12px; font-size:.85rem; align-items:center; border-top:1px solid var(--border); }
 .gmd-sems-row:hover { background:var(--surface-2); }
 .gmd-footer { display:flex; justify-content:flex-end; padding:10px 0; gap:8px; }
+.gmd-hours-footer { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; padding-top:14px; border-top:2px solid var(--border); }
+.gmd-hours-cell { display:flex; flex-direction:column; gap:3px; }
+.gmd-hours-lbl { font-size:.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+.gmd-hours-val { font-size:1.1rem; font-weight:700; color:var(--text); }
+.gmd-hours-val.gmd-hours-remaining { color:var(--accent); }
+.gmd-hours-footer.gmd-hours-over .gmd-hours-remaining { color:var(--danger); }
 
 /* ---------------------------------------------------------
    26c. Profile Card

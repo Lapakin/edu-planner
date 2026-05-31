@@ -292,6 +292,37 @@ class EntityManager {
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
+
+    // Footer with per-column totals (over ALL filtered rows, not just current page)
+    if (config.columns.some(c => c.total)) {
+      const tfoot = document.createElement('tfoot');
+      const totalRows = [...this.newRows, ...filteredRows];
+      let tfHtml = '<tr class="row-totals"><td class="col-check"></td>';
+      let labelPlaced = false;
+      config.columns.forEach(col => {
+        if (col.total) {
+          const sum = totalRows.reduce((acc, row) => {
+            const v = row._tempId !== undefined
+              ? row[col.key]
+              : this._currentVal(row.id, col.key, row[col.key]);
+            const n = Number(v);
+            return acc + (Number.isFinite(n) ? n : 0);
+          }, 0);
+          tfHtml += `<td class="cell-total">${sum}</td>`;
+        } else if (!labelPlaced) {
+          // Use the first non-summed column to hold the "Total" row label
+          tfHtml += `<td class="cell-total-label">${t('fields.total')}</td>`;
+          labelPlaced = true;
+        } else {
+          tfHtml += '<td></td>';
+        }
+      });
+      if (config.extraActions && config.extraActions.length > 0) tfHtml += '<td></td>';
+      tfHtml += '</tr>';
+      tfoot.innerHTML = tfHtml;
+      table.appendChild(tfoot);
+    }
+
     wrap.appendChild(table);
 
     // Pagination controls (only if more than one page worth of existing rows)
