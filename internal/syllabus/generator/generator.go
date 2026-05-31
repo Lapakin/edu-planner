@@ -31,11 +31,17 @@ func New(
 	workloads []*Workload,
 	roomIDs []uint64,
 	groupIDs []uint64,
+	roomCapacities map[uint64]int,
+	groupSizes map[uint64]int,
 	startDate, endDate time.Time,
 ) *Generator {
+	s := newSettings(templateSetting, bellSchedules, restriction, preferences, labRooms)
+	s.roomCapacities = roomCapacities
+	s.groupSizes = groupSizes
+
 	return &Generator{
 		cfg:       genCfg,
-		settings:  newSettings(templateSetting, bellSchedules, restriction, preferences, labRooms),
+		settings:  s,
 		workloads: workloads,
 		roomIDs:   roomIDs,
 		groupIDs:  groupIDs,

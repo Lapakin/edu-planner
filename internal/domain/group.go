@@ -10,6 +10,7 @@ type Group struct {
 	SpecialtyID    uint64     `json:"specialty_id" db:"specialty_id"`
 	Name           string     `json:"name" db:"name"`
 	ShortName      string     `json:"short_name" db:"short_name"`
+	StudentCount   int        `json:"student_count" db:"student_count"`
 	IsContract     bool       `json:"is_contract" db:"is_contract"`
 	IsSplitting    bool       `json:"is_splitting" db:"is_splitting"`
 	EducationStart time.Time  `json:"education_start" db:"education_start"`

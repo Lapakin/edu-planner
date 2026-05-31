@@ -45,6 +45,8 @@ func makeMinimalGenerator() *Generator {
 		[]*Workload{w},
 		[]uint64{101},
 		[]uint64{1},
+		nil,
+		nil,
 		startDate,
 		endDate,
 	)
@@ -128,7 +130,7 @@ func TestGenerator_Generate_WithTimeout(t *testing.T) {
 	startDate := time.Date(2024, 9, 2, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2024, 9, 13, 0, 0, 0, 0, time.UTC)
 
-	g := New(genCfg, ts, bells, r, nil, nil, []*Workload{w}, []uint64{101}, []uint64{1}, startDate, endDate)
+	g := New(genCfg, ts, bells, r, nil, nil, []*Workload{w}, []uint64{101}, []uint64{1}, nil, nil, startDate, endDate)
 	data, err := g.Generate(context.Background())
 	if err != nil {
 		t.Fatalf("Generate() with 2 goroutines returned error: %v", err)

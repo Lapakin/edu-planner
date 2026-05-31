@@ -59,6 +59,7 @@ const ENTITY_CONFIGS = {
           { value: 'auditorium', labelKey: 'roomTypes.auditorium' },
           { value: 'laboratory', labelKey: 'roomTypes.laboratory' },
         ] },
+      { key: 'capacity', type: 'number', labelKey: 'fields.capacity', required: true },
     ],
     filters: [
       { key: 'room_type', type: 'select', labelKey: 'fields.roomType',
@@ -136,6 +137,7 @@ const ENTITY_CONFIGS = {
       { key: 'short_name', type: 'text', labelKey: 'fields.shortName' },
       { key: 'specialty_id', type: 'select', labelKey: 'fields.specialty',
         ref: 'specialties', refLabel: 'name', required: true },
+      { key: 'student_count', type: 'number', labelKey: 'fields.studentCount', required: true },
       { key: 'is_contract',  type: 'bool', labelKey: 'fields.isContract' },
       { key: 'is_splitting', type: 'bool', labelKey: 'fields.isSplitting' },
       { key: 'education_start', type: 'date', labelKey: 'fields.educationStart', required: true },

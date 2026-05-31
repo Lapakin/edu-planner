@@ -29,6 +29,7 @@ func (r *GroupRepository) CreateGroups(ctx context.Context, groups domain.Groups
 			specialty_id,
 			name,
 			short_name,
+			student_count,
 			is_contract,
 			is_splitting,
 			education_start,
@@ -41,6 +42,7 @@ func (r *GroupRepository) CreateGroups(ctx context.Context, groups domain.Groups
 			g.SpecialtyID,
 			g.Name,
 			g.ShortName,
+			g.StudentCount,
 			g.IsContract,
 			g.IsSplitting,
 			g.EducationStart,
@@ -69,6 +71,7 @@ func (r *GroupRepository) GetGroupByID(ctx context.Context, id uint64) (*domain.
 			g.specialty_id,
 			g.name,
 			g.short_name,
+			g.student_count,
 			g.is_contract,
 			g.is_splitting,
 			g.education_start,
@@ -101,6 +104,7 @@ func (r *GroupRepository) FetchGroups(ctx context.Context, filters f.Filters) (d
 			g.specialty_id,
 			g.name,
 			g.short_name,
+			g.student_count,
 			g.is_contract,
 			g.is_splitting,
 			g.education_start,
@@ -144,19 +148,21 @@ func (r *GroupRepository) UpdateGroups(ctx context.Context, groups domain.Groups
 		AddBigintColumn("specialty_id").
 		AddVarCharColumn("name").
 		AddVarCharColumn("short_name").
+		AddIntColumn("student_count").
 		AddBoolColumn("is_contract").
 		AddBoolColumn("is_splitting").
 		AddTimeStampColumn("education_start").
 		AddTimeStampColumn("education_end").
 		AddTimeStampColumn("modified_at")
 
-	args := make([]any, 0, 9*len(groups))
+	args := make([]any, 0, 10*len(groups))
 	for _, g := range groups {
 		args = append(args,
 			g.ID,
 			g.SpecialtyID,
 			g.Name,
 			g.ShortName,
+			g.StudentCount,
 			g.IsContract,
 			g.IsSplitting,
 			g.EducationStart,

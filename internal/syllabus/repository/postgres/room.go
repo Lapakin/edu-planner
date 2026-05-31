@@ -28,6 +28,7 @@ func (r RoomRepository) CreateRooms(ctx context.Context, rooms domain.Rooms) err
 		Columns(`
 			name,
 			room_type,
+			capacity,
 			created_at
 		`)
 
@@ -35,6 +36,7 @@ func (r RoomRepository) CreateRooms(ctx context.Context, rooms domain.Rooms) err
 		builder = builder.Values(
 			rm.Name,
 			rm.RoomType,
+			rm.Capacity,
 			rm.CreatedAt,
 		)
 	}
@@ -58,6 +60,7 @@ func (r RoomRepository) GetRoomByID(ctx context.Context, id uint64) (*domain.Roo
 			ra.academic_year_id,
 			r.name,
 			r.room_type,
+			r.capacity,
 			r.created_at,
 			r.modified_at
 		`).
@@ -85,6 +88,7 @@ func (r RoomRepository) FetchRooms(ctx context.Context, filters f.Filters) (doma
 			ra.academic_year_id,
 			r.name,
 			r.room_type,
+			r.capacity,
 			r.created_at,
 			r.modified_at
 		`).
@@ -122,14 +126,16 @@ func (r RoomRepository) UpdateRooms(ctx context.Context, rooms domain.Rooms) err
 		AddBigintColumn("id").
 		AddVarCharColumn("name").
 		AddVarCharColumn("room_type").
+		AddIntColumn("capacity").
 		AddTimeStampColumn("modified_at")
 
-	args := make([]any, 0, 4*len(rooms))
+	args := make([]any, 0, 5*len(rooms))
 	for _, rm := range rooms {
 		args = append(args,
 			rm.ID,
 			rm.Name,
 			rm.RoomType,
+			rm.Capacity,
 			rm.ModifiedAt,
 		)
 	}

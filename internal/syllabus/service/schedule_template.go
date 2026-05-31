@@ -171,8 +171,10 @@ func (s *ScheduleTemplateService) GenerateScheduleTemplate(ctx context.Context, 
 		return nil, ErrInternal
 	}
 	roomIDs := make([]uint64, 0, len(rooms))
+	roomCapacities := make(map[uint64]int, len(rooms))
 	for _, r := range rooms {
 		roomIDs = append(roomIDs, r.ID)
+		roomCapacities[r.ID] = r.Capacity
 	}
 
 	// 10. Fetch disciplines (needed for cycle committee lookup in workload building)
@@ -187,8 +189,14 @@ func (s *ScheduleTemplateService) GenerateScheduleTemplate(ctx context.Context, 
 		return nil, generator.ErrNoWorkloads
 	}
 
+	// 11a. Build group sizes lookup (groupID → student count) for room-capacity matching
+	groupSizes := make(map[uint64]int, len(groups))
+	for _, g := range groups {
+		groupSizes[g.ID] = g.StudentCount
+	}
+
 	// 12. Run generator (read-only — nothing is written to DB)
-	gen := generator.New(s.cfg, templateSetting, bellSchedules, restriction, teacherPreferences, labRooms, workloads, roomIDs, groupIDs, semesterStart, semesterEnd)
+	gen := generator.New(s.cfg, templateSetting, bellSchedules, restriction, teacherPreferences, labRooms, workloads, roomIDs, groupIDs, roomCapacities, groupSizes, semesterStart, semesterEnd)
 	scheduleData, err := gen.Generate(ctx)
 	if err != nil {
 		return nil, err
