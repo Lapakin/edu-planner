@@ -142,11 +142,23 @@ class EntityManager {
         if (f.type === 'select') {
           input = document.createElement('select');
           input.innerHTML = `<option value="">${t('actions.add').replace(t('actions.add'), '—')}</option>`;
-          const opts = f.ref ? (this.cache[f.ref] || []) : (f.options || []);
+          let opts;
+          if (f.fromRows) {
+            // Build distinct options straight from the loaded rows (e.g. semester numbers)
+            const seen = new Set();
+            opts = this.rows
+              .map(r => r[f.key])
+              .filter(v => v !== null && v !== undefined && v !== '')
+              .filter(v => { const k = String(v); if (seen.has(k)) return false; seen.add(k); return true; })
+              .sort((a, b) => (Number(a) - Number(b)) || String(a).localeCompare(String(b)))
+              .map(v => ({ value: String(v), label: String(v) }));
+          } else {
+            opts = f.ref ? (this.cache[f.ref] || []) : (f.options || []);
+          }
           opts.forEach(o => {
             const op = document.createElement('option');
-            op.value = f.ref ? (o.id || o.value) : o.value;
-            op.textContent = f.ref ? (o[f.refLabel] || o.name || o.id) : t(o.labelKey);
+            op.value = f.fromRows ? o.value : (f.ref ? (o.id || o.value) : o.value);
+            op.textContent = f.fromRows ? o.label : (f.ref ? (o[f.refLabel] || o.name || o.id) : t(o.labelKey));
             input.appendChild(op);
           });
           // Pre-populate from global year/semester state (unless noAutoFill is set)

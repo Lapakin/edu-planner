@@ -2290,6 +2290,13 @@ const App = {
       return (`${user.first_name||''} ${user.last_name||''}`).trim() || user.email;
     };
 
+    const studyPlanLabel = (p) => {
+      const disc = disciplines.find(x => x.id === p.discipline_id);
+      const spec = specialties.find(x => x.id === p.specialty_id);
+      return `${disc?.name || '#' + p.id} (${spec?.short_name || spec?.name || '—'}, сем.${p.semester_number})`;
+    };
+    let studyPlanFilter = '';
+
     const redraw = () => {
       const sel     = distributions.find(d => d.id === selectedId) || null;
       const selAssigns = assignments.filter(a => a.workload_distribution_id === selectedId);
@@ -2302,13 +2309,26 @@ const App = {
       const assignedHours = selAssigns.reduce((s, a) => s + (Number(a.assigned_hours)||0), 0);
       const remainingHours = totalHours - assignedHours;
 
+      const visibleDistributions = studyPlanFilter
+        ? distributions.filter(d => String(d.study_plan_id) === studyPlanFilter)
+        : distributions;
+
       container.innerHTML = `
         <div class="gmd-wrap">
+          <div class="filter-bar">
+            <div class="filter-field">
+              <label>${t('fields.studyPlan')}</label>
+              <select id="wmd-sp-filter">
+                <option value="">${t('actions.add').replace(t('actions.add'), '—')}</option>
+                ${studyPlans.map(p => `<option value="${p.id}"${studyPlanFilter === String(p.id) ? ' selected' : ''}>${studyPlanLabel(p)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
           <div class="gmd-layout">
             <div class="gmd-list-panel">
-              <div class="gmd-list-hdr">${t('entities.workloadDistributions')} (${distributions.length})</div>
-              ${distributions.length === 0 ? `<div class="gmd-empty">${t('messages.noData')}</div>` :
-                distributions.map(d => {
+              <div class="gmd-list-hdr">${t('entities.workloadDistributions')} (${visibleDistributions.length})</div>
+              ${visibleDistributions.length === 0 ? `<div class="gmd-empty">${t('messages.noData')}</div>` :
+                visibleDistributions.map(d => {
                   const isSel   = d.id === selectedId;
                   const aCount  = assignments.filter(a => a.workload_distribution_id === d.id).length;
                   return `<div class="gmd-item${isSel?' gmd-item-sel':''}" data-did="${d.id}">
@@ -2377,6 +2397,15 @@ const App = {
 
       container.querySelectorAll('.gmd-item').forEach(el => {
         el.addEventListener('click', () => { selectedId = Number(el.dataset.did); redraw(); });
+      });
+
+      container.querySelector('#wmd-sp-filter')?.addEventListener('change', (e) => {
+        studyPlanFilter = e.target.value;
+        const vis = studyPlanFilter
+          ? distributions.filter(d => String(d.study_plan_id) === studyPlanFilter)
+          : distributions;
+        if (!vis.find(d => d.id === selectedId)) selectedId = vis[0]?.id ?? null;
+        redraw();
       });
 
       container.querySelector('#wmd-add')?.addEventListener('click', () => {
