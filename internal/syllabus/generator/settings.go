@@ -31,6 +31,10 @@ type settings struct {
 	teacherPreferredSlots map[uint64]map[domain.Weekday]map[int]bool
 	// cycle committee lab rooms: cycleCommitteeID → []roomID
 	cycleCommitteeLabRooms map[uint64][]uint64
+	// room capacities: roomID → number of seats (0 or absent = unlimited/unset)
+	roomCapacities map[uint64]int
+	// group sizes: groupID → number of students (0 or absent = unknown)
+	groupSizes map[uint64]int
 }
 
 // newSettings creates a settings instance from domain models.
@@ -65,6 +69,8 @@ func newSettings(
 		teacherForbiddenSlots:        make(map[uint64]map[domain.Weekday]map[int]bool),
 		teacherPreferredSlots:        make(map[uint64]map[domain.Weekday]map[int]bool),
 		cycleCommitteeLabRooms:       make(map[uint64][]uint64),
+		roomCapacities:               make(map[uint64]int),
+		groupSizes:                   make(map[uint64]int),
 	}
 
 	if len(bellSchedules) > 0 {

@@ -230,6 +230,10 @@ INSERT INTO academic_year_to_room (academic_year_id, room_id)
 VALUES (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10),(1,11),(1,12)
 ON CONFLICT DO NOTHING;
 
+-- Seed room capacities (auditoriums larger than laboratories) for demo data.
+UPDATE room SET capacity = CASE room_type WHEN 'laboratory' THEN 15 ELSE 30 END
+WHERE capacity = 0;
+
 
 -- ─────────────────────────────────────────────────────────────
 -- Student groups  (table: education_group, was "group")
@@ -280,6 +284,10 @@ VALUES
     (1,11),(1,12),(1,13),(1,14),(1,15),(1,16),(1,17),(1,18),(1,19),(1,20),
     (1,21),(1,22),(1,23),(1,24),(1,25),(1,26),(1,27),(1,28)
 ON CONFLICT DO NOTHING;
+
+-- Seed group sizes (split groups slightly larger) for demo data.
+UPDATE education_group SET student_count = CASE WHEN is_splitting THEN 28 ELSE 24 END
+WHERE student_count = 0;
 
 
 -- ─────────────────────────────────────────────────────────────

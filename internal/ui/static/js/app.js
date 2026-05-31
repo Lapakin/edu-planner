@@ -2052,6 +2052,7 @@ const App = {
                   <div class="gmd-prop"><span class="gmd-prop-lbl">${t('fields.isContract')}</span><span>${sel.is_contract?'✓':'✗'}</span></div>
                   <div class="gmd-prop"><span class="gmd-prop-lbl">${t('fields.isSplitting')}</span><span>${sel.is_splitting?'✓':'✗'}</span></div>
                   <div class="gmd-prop"><span class="gmd-prop-lbl">${t('fields.shortName')}</span><span>${sel.short_name||'—'}</span></div>
+                  <div class="gmd-prop"><span class="gmd-prop-lbl">${t('fields.studentCount')}</span><span>${sel.student_count ?? '—'}</span></div>
                 </div>
 
                 <div class="gmd-sems-header">
@@ -2170,7 +2171,8 @@ const App = {
           <option value="true"${val?' selected':''}>✓</option>
         </select>`;
       } else {
-        inp = `<input type="${col.type==='date'?'date':'text'}" data-field="${col.key}" value="${col.type==='date'?String(val).slice(0,10):val}">`;
+        const inputType = col.type==='date' ? 'date' : (col.type==='number' ? 'number' : 'text');
+        inp = `<input type="${inputType}" data-field="${col.key}" value="${col.type==='date'?String(val).slice(0,10):val}">`;
       }
       return `<div class="form-field"><label>${t(col.labelKey)}${col.required?' <span class="req">*</span>':''}</label>${inp}</div>`;
     }).join('');

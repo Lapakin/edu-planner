@@ -3222,6 +3222,10 @@ components:
           type: string
         room_type:
           type: string
+        capacity:
+          type: integer
+          description: Number of seats the room holds. 0 means unset (treated as unlimited during schedule generation).
+          example: 30
         created_at:
           type: string
           format: date-time
@@ -3236,6 +3240,7 @@ components:
         - academic_year_id
         - name
         - room_type
+        - capacity
 
     Specialty:
       type: object
@@ -3369,6 +3374,10 @@ components:
           type: string
         short_name:
           type: string
+        student_count:
+          type: integer
+          description: Number of students in the group. Used to match against room capacity during schedule generation. 0 means unknown (no capacity constraint).
+          example: 28
         is_contract:
           type: boolean
         is_splitting:
@@ -3396,6 +3405,7 @@ components:
         - specialty_id
         - name
         - short_name
+        - student_count
         - education_start
         - education_end
 

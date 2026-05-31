@@ -53,6 +53,38 @@ func (v *validator) validate(
 		}
 	}
 
+	// Capacity feasibility: every group that has lessons and a known size must fit
+	// in at least one room. A room with capacity 0 is treated as unlimited, so the
+	// check only fails when every room has a positive capacity smaller than the group.
+	if len(v.cfg.roomCapacities) > 0 && len(v.cfg.groupSizes) > 0 {
+		maxRoomCapacity := 0
+		hasUnlimitedRoom := false
+		for _, c := range v.cfg.roomCapacities {
+			if c <= 0 {
+				hasUnlimitedRoom = true
+				break
+			}
+			if c > maxRoomCapacity {
+				maxRoomCapacity = c
+			}
+		}
+
+		if !hasUnlimitedRoom {
+			for _, gid := range groupIDs {
+				if groupLessonCount[gid] == 0 {
+					continue
+				}
+				size := v.cfg.groupSizes[gid]
+				if size > 0 && size > maxRoomCapacity {
+					return fmt.Errorf(
+						"%w: group %d has %d students but the largest room holds only %d",
+						ErrValidationFailed, gid, size, maxRoomCapacity,
+					)
+				}
+			}
+		}
+	}
+
 	// Check minimum lessons per day: if a group has any lessons but fewer than min,
 	// it's impossible to satisfy the constraint on any day.
 	if v.cfg.minGroupLessonsPerDay > 0 {

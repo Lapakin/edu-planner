@@ -76,12 +76,14 @@ var (
 		AcademicYearID: AcademicYear1.ID,
 		Name:           "101",
 		RoomType:       domain.RoomTypeAuditorium,
+		Capacity:       30,
 	}
 	Room2 = &domain.Room{
 		ID:             2,
 		AcademicYearID: AcademicYear1.ID,
 		Name:           "Lab-1",
 		RoomType:       domain.RoomTypeLaboratory,
+		Capacity:       15,
 	}
 	RoomsArray = domain.Rooms{Room1, Room2}
 
@@ -168,6 +170,7 @@ var (
 		SpecialtyID:    Specialty1.ID,
 		Name:           "CS-1",
 		ShortName:      "CS1",
+		StudentCount:   28,
 		EducationStart: time.Date(2023, time.September, 1, 0, 0, 0, 0, time.UTC),
 		EducationEnd:   time.Date(2027, time.June, 30, 0, 0, 0, 0, time.UTC),
 	}
@@ -177,6 +180,7 @@ var (
 		SpecialtyID:    Specialty1.ID,
 		Name:           "CS-2",
 		ShortName:      "CS2",
+		StudentCount:   24,
 		EducationStart: time.Date(2023, time.September, 1, 0, 0, 0, 0, time.UTC),
 		EducationEnd:   time.Date(2027, time.June, 30, 0, 0, 0, 0, time.UTC),
 	}

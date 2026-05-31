@@ -16,6 +16,7 @@ type Room struct {
 	AcademicYearID uint64     `json:"academic_year_id" db:"academic_year_id"`
 	Name           string     `json:"name" db:"name"`
 	RoomType       RoomType   `json:"room_type" db:"room_type"`
+	Capacity       int        `json:"capacity" db:"capacity"`
 	IsDeleted      bool       `json:"is_deleted" db:"is_deleted"`
 	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
 	ModifiedAt     *time.Time `json:"modified_at" db:"modified_at"`

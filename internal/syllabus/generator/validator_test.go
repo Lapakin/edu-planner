@@ -50,6 +50,49 @@ func TestValidator_ImpossibleWhenGroupNeedsMoreThanAvailableSlots(t *testing.T) 
 	}
 }
 
+func TestValidator_ImpossibleWhenGroupLargerThanEveryRoom(t *testing.T) {
+	cfg := makeSettingsForValidator(4, 0, false)
+	cfg.roomCapacities = map[uint64]int{101: 20, 102: 25}
+	cfg.groupSizes = map[uint64]int{1: 30} // bigger than the largest room (25)
+	v := newValidator(cfg)
+
+	dates := makeDates(5)
+	lessons := []*lesson{makeLesson(1, 10), makeLesson(1, 11)}
+
+	err := v.validate(lessons, dates, []uint64{1})
+	if !errors.Is(err, ErrValidationFailed) {
+		t.Errorf("expected ErrValidationFailed when group exceeds all room capacities, got %v", err)
+	}
+}
+
+func TestValidator_ValidWhenGroupFitsSomeRoom(t *testing.T) {
+	cfg := makeSettingsForValidator(4, 0, false)
+	cfg.roomCapacities = map[uint64]int{101: 20, 102: 40}
+	cfg.groupSizes = map[uint64]int{1: 30} // fits room 102
+	v := newValidator(cfg)
+
+	dates := makeDates(5)
+	lessons := []*lesson{makeLesson(1, 10), makeLesson(1, 11)}
+
+	if err := v.validate(lessons, dates, []uint64{1}); err != nil {
+		t.Errorf("expected no error when group fits a room, got %v", err)
+	}
+}
+
+func TestValidator_CapacityIgnoredWhenAnyRoomUnlimited(t *testing.T) {
+	cfg := makeSettingsForValidator(4, 0, false)
+	cfg.roomCapacities = map[uint64]int{101: 20, 102: 0} // 102 unlimited (unset)
+	cfg.groupSizes = map[uint64]int{1: 500}
+	v := newValidator(cfg)
+
+	dates := makeDates(5)
+	lessons := []*lesson{makeLesson(1, 10), makeLesson(1, 11)}
+
+	if err := v.validate(lessons, dates, []uint64{1}); err != nil {
+		t.Errorf("expected no error when an unlimited room exists, got %v", err)
+	}
+}
+
 func TestValidator_ImpossibleWhenGroupHasFewerThanMinLessonsPerDay(t *testing.T) {
 	cfg := makeSettingsForValidator(4, 2, false)
 	v := newValidator(cfg)
