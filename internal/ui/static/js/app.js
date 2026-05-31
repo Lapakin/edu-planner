@@ -2292,6 +2292,14 @@ const App = {
       const sel     = distributions.find(d => d.id === selectedId) || null;
       const selAssigns = assignments.filter(a => a.workload_distribution_id === selectedId);
 
+      // Hours budget for the selected distribution
+      const totalHours = sel
+        ? (Number(sel.classroom_work)||0) + (Number(sel.laboratory)||0) +
+          (Number(sel.practical)||0)      + (Number(sel.exam)||0)
+        : 0;
+      const assignedHours = selAssigns.reduce((s, a) => s + (Number(a.assigned_hours)||0), 0);
+      const remainingHours = totalHours - assignedHours;
+
       container.innerHTML = `
         <div class="gmd-wrap">
           <div class="gmd-layout">
@@ -2346,6 +2354,11 @@ const App = {
                       <button class="btn btn-sm btn-danger wmd-del-assign" data-aid="${a.id}"><svg class="icon icon-sm"><use href="#icon-trash"/></svg></button>
                     </div>`).join('')}
                   ${selAssigns.length===0?`<div class="gmd-empty" style="padding:12px 0">${t('messages.noData')}</div>`:''}
+                </div>
+                <div class="gmd-hours-footer${remainingHours < 0 ? ' gmd-hours-over' : ''}">
+                  <span class="gmd-hours-cell"><span class="gmd-hours-lbl">${t('workload.totalHours')}</span><span class="gmd-hours-val">${totalHours}</span></span>
+                  <span class="gmd-hours-cell"><span class="gmd-hours-lbl">${t('workload.assignedHours')}</span><span class="gmd-hours-val">${assignedHours}</span></span>
+                  <span class="gmd-hours-cell"><span class="gmd-hours-lbl">${t('workload.remainingHours')}</span><span class="gmd-hours-val gmd-hours-remaining">${remainingHours}</span></span>
                 </div>
               ` : `<div class="gmd-empty">${t('messages.noData')}</div>`}
             </div>
