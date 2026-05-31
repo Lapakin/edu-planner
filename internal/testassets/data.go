@@ -131,6 +131,11 @@ var (
 	}
 	UsersArray = domain.Users{User1, User2}
 
+	AttachUsersReq1 = domain.AttachUsersReq{
+		AcademicYearID: AcademicYear1.ID,
+		UserIDs:        []uint64{User1.ID, User2.ID},
+	}
+
 	CycleCommittee1 = &domain.CycleCommittee{
 		ID:             1,
 		AcademicYearID: AcademicYear1.ID,

@@ -76,6 +76,7 @@ func NewFetchUsersHandler(svc service.UserSvc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		filters, err := rest.CreateFiltersFromQueries(c, rest.Queries{
 			{Param: domain.RoleParam, ValidateFunc: nil},
+			{Param: domain.AcademicYearIDParam, ValidateFunc: nil},
 		})
 		if err != nil {
 			rest.RespondError(c, http.StatusBadRequest, rest.ErrParseQuery)
@@ -89,6 +90,35 @@ func NewFetchUsersHandler(svc service.UserSvc) gin.HandlerFunc {
 		}
 
 		rest.RespondJSON(c, http.StatusOK, users)
+	}
+}
+
+func NewAttachUsersHandler(svc service.UserSvc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			rest.RespondError(c, http.StatusBadRequest, rest.ErrRequestBodyReading)
+			return
+		}
+		defer c.Request.Body.Close()
+
+		var req domain.AttachUsersReq
+		if err = json.Unmarshal(body, &req); err != nil {
+			rest.RespondError(c, http.StatusBadRequest, rest.ErrUnmarshal)
+			return
+		}
+
+		if req.AcademicYearID == 0 || len(req.UserIDs) == 0 {
+			rest.RespondError(c, http.StatusBadRequest, rest.ErrEmptyBody)
+			return
+		}
+
+		if err = svc.AttachUsers(c.Request.Context(), req.AcademicYearID, req.UserIDs); err != nil {
+			rest.RespondError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		rest.RespondJSON(c, http.StatusOK, nil)
 	}
 }
 

@@ -249,6 +249,13 @@ paths:
           schema:
             type: string
           required: false
+        - name: academic_year_id
+          in: query
+          description: When provided, returns only users attached to this academic year.
+          schema:
+            type: integer
+            format: int64
+          required: false
       responses:
         '200':
           description: Successful response
@@ -287,6 +294,39 @@ paths:
                   $ref: '#/components/schemas/User'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/attach:
+    parameters:
+      - $ref: '#/components/parameters/Authorization'
+    post:
+      tags:
+        - User
+      summary: Attach users to an academic year
+      description: >
+        Links the given users to an academic year via the bridge table. Must be
+        called when a new user is added so the user appears under that academic
+        year. Idempotent: re-attaching an already-linked user is a no-op.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachUsersReq'
+      responses:
+        '200':
+          description: Successfully attached
+        '400':
+          description: Bad Request
           content:
             application/json:
               schema:
@@ -531,6 +571,21 @@ components:
         - first_name
         - last_name
         - role
+
+    AttachUsersReq:
+      type: object
+      properties:
+        academic_year_id:
+          type: integer
+          format: int64
+        user_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+      required:
+        - academic_year_id
+        - user_ids
 
     InviteReq:
       type: object

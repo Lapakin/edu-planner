@@ -57,6 +57,20 @@ func (mr *MockUserSvcMockRecorder) ActivateUser(ctx, claims, userID any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActivateUser", reflect.TypeOf((*MockUserSvc)(nil).ActivateUser), ctx, claims, userID)
 }
 
+// AttachUsers mocks base method.
+func (m *MockUserSvc) AttachUsers(ctx context.Context, academicYearID uint64, userIDs []uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AttachUsers", ctx, academicYearID, userIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AttachUsers indicates an expected call of AttachUsers.
+func (mr *MockUserSvcMockRecorder) AttachUsers(ctx, academicYearID, userIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AttachUsers", reflect.TypeOf((*MockUserSvc)(nil).AttachUsers), ctx, academicYearID, userIDs)
+}
+
 // CreateUsers mocks base method.
 func (m *MockUserSvc) CreateUsers(ctx context.Context, claims *jwt.Claims, users domain.Users) error {
 	m.ctrl.T.Helper()

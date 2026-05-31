@@ -28,6 +28,7 @@ func NewRouter(svc *service.Services) *gin.Engine {
 	protected.Handle(http.MethodPost, "/users", handler.NewCreateUsersHandler(svc.UserSvc))
 	protected.Handle(http.MethodGet, "/users", handler.NewFetchUsersHandler(svc.UserSvc))
 	protected.Handle(http.MethodPut, "/users", handler.NewUpdateUsersHandler(svc.UserSvc))
+	protected.Handle(http.MethodPost, "/users/attach", handler.NewAttachUsersHandler(svc.UserSvc))
 	protected.Handle(http.MethodPost, "/users/delete", handler.NewDeleteUsersHandler(svc.UserSvc))
 	protected.Handle(http.MethodPost, "/users/:userId/activate", handler.NewActivateUserHandler(svc.UserSvc))
 	protected.Handle(http.MethodPost, "/users/:userId/deactivate", handler.NewDeactivateUserHandler(svc.UserSvc))

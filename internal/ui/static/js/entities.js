@@ -299,6 +299,7 @@ const ENTITY_CONFIGS = {
   'users': {
     apiPath: '/api/auth/users',
     i18nKey: 'entities.users',
+    autoYearFilter: true,
     columns: [
       { key: 'first_name',  type: 'text',  labelKey: 'fields.firstName',  readonly: true },
       { key: 'last_name',   type: 'text',  labelKey: 'fields.lastName',   readonly: true },

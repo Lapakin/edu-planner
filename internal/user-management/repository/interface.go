@@ -23,6 +23,8 @@ type UserRepository interface {
 	CreateUserProfiles(ctx context.Context, users domain.Users) error
 	GetUserByID(ctx context.Context, userID uint64) (*domain.User, error)
 	FetchUsers(ctx context.Context, filters f.Filters) (domain.Users, error)
+	FetchActiveUserIDs(ctx context.Context) ([]uint64, error)
+	AttachUsers(ctx context.Context, academicYearID uint64, userIDs []uint64) error
 	UpdateUsers(ctx context.Context, users domain.Users) error
 	UpdateUserProfiles(ctx context.Context, users domain.Users) error
 	DeleteUsers(ctx context.Context, userIDs []uint64) error

@@ -103,6 +103,15 @@ func (s *UserService) FetchUsers(ctx context.Context, filters f.Filters) (domain
 	return users, nil
 }
 
+func (s *UserService) AttachUsers(ctx context.Context, academicYearID uint64, userIDs []uint64) error {
+	if err := s.rm.NewUserRepo(s.db).AttachUsers(ctx, academicYearID, userIDs); err != nil {
+		s.l.Errorf("Error during attaching users to academic year. err: %v", err)
+		s.l.Debugf("academicYearID: %v, userIDs: %v", academicYearID, userIDs)
+		return handleDBError(err)
+	}
+	return nil
+}
+
 func (s *UserService) UpdateUsers(ctx context.Context, claims *jwt.Claims, users domain.Users) error {
 	var err error
 	defer func() {

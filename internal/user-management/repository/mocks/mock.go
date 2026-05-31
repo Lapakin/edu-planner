@@ -139,6 +139,20 @@ func (mr *MockUserRepositoryMockRecorder) ActivateUser(ctx, userID, currentTime 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActivateUser", reflect.TypeOf((*MockUserRepository)(nil).ActivateUser), ctx, userID, currentTime)
 }
 
+// AttachUsers mocks base method.
+func (m *MockUserRepository) AttachUsers(ctx context.Context, academicYearID uint64, userIDs []uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AttachUsers", ctx, academicYearID, userIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AttachUsers indicates an expected call of AttachUsers.
+func (mr *MockUserRepositoryMockRecorder) AttachUsers(ctx, academicYearID, userIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AttachUsers", reflect.TypeOf((*MockUserRepository)(nil).AttachUsers), ctx, academicYearID, userIDs)
+}
+
 // CreateUserProfiles mocks base method.
 func (m *MockUserRepository) CreateUserProfiles(ctx context.Context, users domain.Users) error {
 	m.ctrl.T.Helper()
@@ -193,6 +207,21 @@ func (m *MockUserRepository) DeleteUsers(ctx context.Context, userIDs []uint64) 
 func (mr *MockUserRepositoryMockRecorder) DeleteUsers(ctx, userIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUsers", reflect.TypeOf((*MockUserRepository)(nil).DeleteUsers), ctx, userIDs)
+}
+
+// FetchActiveUserIDs mocks base method.
+func (m *MockUserRepository) FetchActiveUserIDs(ctx context.Context) ([]uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchActiveUserIDs", ctx)
+	ret0, _ := ret[0].([]uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchActiveUserIDs indicates an expected call of FetchActiveUserIDs.
+func (mr *MockUserRepositoryMockRecorder) FetchActiveUserIDs(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchActiveUserIDs", reflect.TypeOf((*MockUserRepository)(nil).FetchActiveUserIDs), ctx)
 }
 
 // FetchUsers mocks base method.

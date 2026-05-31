@@ -117,7 +117,7 @@ func (r *UserRepository) GetUserByID(ctx context.Context, userID uint64) (*domai
 }
 
 func (r *UserRepository) FetchUsers(ctx context.Context, filters f.Filters) (domain.Users, error) {
-	query, args, err := q.Select(ctx).
+	builder := q.Select(ctx).
 		Columns(`
 			u.id,
 			u.email,
@@ -131,12 +131,21 @@ func (r *UserRepository) FetchUsers(ctx context.Context, filters f.Filters) (dom
 			u.modified_at
 		`).
 		From(`"user" u`).
-		LeftJoin("user_profile up ON u.id = up.user_id").
+		LeftJoin("user_profile up ON u.id = up.user_id")
+
+	// Only join the bridge table when filtering by academic year, so that an
+	// unfiltered fetch still returns users that are not attached to any year.
+	if _, ok := filters[domain.AcademicYearIDParam]; ok {
+		builder = builder.InnerJoin("academic_year_to_user ay2u ON ay2u.user_id = u.id")
+	}
+
+	query, args, err := builder.
 		ApplyQueryFilters(filters, q.Wheres{
 			{
 				Operator: q.And,
 				Conditions: q.Conditions{
 					{Name: domain.RoleParam, Column: "u.role", Operator: q.Equals},
+					{Name: domain.AcademicYearIDParam, Column: "ay2u.academic_year_id", Operator: q.Equals},
 				},
 			},
 		}).
@@ -153,6 +162,52 @@ func (r *UserRepository) FetchUsers(ctx context.Context, filters f.Filters) (dom
 	}
 
 	return users, nil
+}
+
+func (r *UserRepository) FetchActiveUserIDs(ctx context.Context) ([]uint64, error) {
+	query, args, err := q.Select(ctx).
+		Columns("id").
+		From(`"user"`).
+		IsActive().
+		IsDeleted(false).
+		OrderBy("id").
+		ToSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]uint64, 0)
+	if err = sqlx.SelectContext(ctx, r.db, &ids, query, args...); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+func (r *UserRepository) AttachUsers(ctx context.Context, academicYearID uint64, userIDs []uint64) error {
+	builder := q.Insert(ctx).
+		Into("academic_year_to_user").
+		Columns(`
+			academic_year_id,
+			user_id
+		`)
+
+	for _, id := range userIDs {
+		builder = builder.Values(academicYearID, id)
+	}
+
+	query, args, err := builder.
+		OnConflictDoNothing().
+		ToSQL()
+	if err != nil {
+		return err
+	}
+
+	if _, err = r.db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *UserRepository) UpdateUsers(ctx context.Context, users domain.Users) error {

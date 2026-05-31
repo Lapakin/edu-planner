@@ -34,6 +34,23 @@ func TestFetchUsers(t *testing.T) {
 		Run(t, ts.URL, ta.DefaultIgnoredFields)
 }
 
+func TestAttachUsers(t *testing.T) {
+	ta.NewHTTPCasesRunner("/api/v1/users/attach", http.MethodPost, adminToken).
+		NewRequestWithBody("OK", ta.AttachUsersReq1, http.StatusOK, nil).
+		NewRequestWithBody("OK_Idempotent", ta.AttachUsersReq1, http.StatusOK, nil).
+		NewBadJWTRequest().
+		NewUnmarshalErrorRequest().
+		NewNilBodyRequest().
+		Run(t, ts.URL, ta.DefaultIgnoredFields)
+}
+
+func TestFetchUsersByAcademicYear(t *testing.T) {
+	ta.NewHTTPCasesRunner("/api/v1/users", http.MethodGet, adminToken).
+		NewOKRequestWithoutBody(map[string]any{domain.AcademicYearIDParam: ta.AcademicYear1.ID}, nil, ta.UsersArray).
+		NewOKRequestWithoutBody(map[string]any{domain.AcademicYearIDParam: ta.AcademicYear2.ID}, nil, domain.Users{}).
+		Run(t, ts.URL, ta.DefaultIgnoredFields)
+}
+
 func TestUpdateUsers(t *testing.T) {
 	ta.NewHTTPCasesRunner("/api/v1/users", http.MethodPut, adminToken).
 		NewRequestWithDataManipulation("OK", ta.UsersArray,

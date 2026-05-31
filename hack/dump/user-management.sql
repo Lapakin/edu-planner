@@ -62,5 +62,21 @@ VALUES
     (14, '$2b$10$K0ssVi2gb5aos/HoFNWC3uqWIHSQm.QQtUWpDlb48sGVDdN7gT3fC', '2025-09-01 00:00:00')
 ON CONFLICT DO NOTHING;
 
+-- Academic year mirror (normally populated via SQS events from syllabus).
+-- Must match the academic year(s) seeded in syllabus.sql.
+INSERT INTO academic_year_info (id, is_deleted)
+VALUES (1, FALSE)
+ON CONFLICT DO NOTHING;
+
+-- Attach every active user to every (non-deleted) academic year.
+INSERT INTO academic_year_to_user (academic_year_id, user_id)
+SELECT ay.id, u.id
+FROM academic_year_info ay
+CROSS JOIN "user" u
+WHERE ay.is_deleted = FALSE
+  AND u.is_active = TRUE
+  AND u.is_deleted = FALSE
+ON CONFLICT DO NOTHING;
+
 SELECT setval(pg_get_serial_sequence('"user"',       'id'), (SELECT MAX(id) FROM "user"));
 SELECT setval(pg_get_serial_sequence('user_profile', 'id'), (SELECT MAX(id) FROM user_profile));
