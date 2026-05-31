@@ -202,6 +202,8 @@ const ENTITY_CONFIGS = {
     filters: [
       { key: 'specialty_id', type: 'select', labelKey: 'fields.specialty',
         ref: 'specialties', refLabel: 'name' },
+      { key: 'semester_number', type: 'select', labelKey: 'fields.semesterNumber',
+        fromRows: true },
     ],
     extraActions: [
       {
