@@ -69,8 +69,8 @@ func (rs *randomScheduler) tryPlace(l *lesson, dates []date, weekDates []date) b
 			continue
 		}
 
-		// Find available lesson numbers
-		busySlots := rs.coord.schedule.getScheduledLessonNumbers(d, l.groupID)
+		// Find available lesson numbers (free for every group of the lesson)
+		busySlots := rs.coord.schedule.getScheduledLessonNumbersForGroups(d, l.groupIDs())
 		availableSlots := rs.coord.finder.findUnscheduledNumbers(busySlots)
 
 		if len(availableSlots) == 0 {
@@ -91,12 +91,12 @@ func (rs *randomScheduler) tryPlace(l *lesson, dates []date, weekDates []date) b
 		}
 
 		// Check for conflicts
-		if rs.coord.schedule.hasConflict(d, lessonNumber, l.groupID, l.teacherIDs()) {
+		if rs.coord.schedule.hasConflict(d, lessonNumber, l.groupIDs(), l.teacherIDs()) {
 			continue
 		}
 
 		// Check availability
-		allParticipants := append([]uint64{l.groupID}, l.teacherIDs()...)
+		allParticipants := append(l.groupIDs(), l.teacherIDs()...)
 		if !rs.coord.availability.areFree(d, allParticipants, lessonNumber) {
 			continue
 		}

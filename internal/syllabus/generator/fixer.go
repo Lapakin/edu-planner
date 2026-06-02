@@ -81,7 +81,7 @@ func (f *fixer) alignDayForGroup(d date, groupID uint64) {
 	lessons := make([]*lesson, 0, k)
 	for _, ln := range nums {
 		for _, l := range f.coord.schedule.getLessons(d, ln) {
-			if l.groupID == groupID {
+			if l.hasGroup(groupID) {
 				lessons = append(lessons, l)
 				break
 			}
@@ -89,6 +89,14 @@ func (f *fixer) alignDayForGroup(d date, groupID uint64) {
 	}
 	if len(lessons) != k {
 		return // unexpected shape; leave as-is
+	}
+
+	// Flow lessons are shared by several groups; relocating them for one group
+	// would disturb the others, so never move a day's block that contains one.
+	for _, l := range lessons {
+		if l.isFlow {
+			return
+		}
 	}
 
 	// Detach the whole block, freeing the group's and teachers' old slots.
@@ -107,7 +115,7 @@ func (f *fixer) alignDayForGroup(d date, groupID uint64) {
 		ts := targets[i]
 		participants := append([]uint64{groupID}, l.teacherIDs()...)
 		if !f.coord.availability.areFree(d, participants, ts) ||
-			f.coord.schedule.hasConflict(d, ts, groupID, l.teacherIDs()) {
+			f.coord.schedule.hasConflict(d, ts, l.groupIDs(), l.teacherIDs()) {
 			ok = false
 			break
 		}
@@ -162,13 +170,18 @@ func (f *fixer) tryCompressGap(d date, groupID uint64, scheduledNumbers []int, g
 	lessons := f.coord.schedule.getLessons(d, sourceSlot)
 	var lessonToMove *lesson
 	for _, l := range lessons {
-		if l.groupID == groupID {
+		if l.hasGroup(groupID) {
 			lessonToMove = l
 			break
 		}
 	}
 
 	if lessonToMove == nil {
+		return
+	}
+
+	// Flow lessons are shared by several groups and stay where they were placed.
+	if lessonToMove.isFlow {
 		return
 	}
 
@@ -179,7 +192,7 @@ func (f *fixer) tryCompressGap(d date, groupID uint64, scheduledNumbers []int, g
 	}
 
 	// Check for conflicts at target
-	if f.coord.schedule.hasConflict(d, targetSlot, groupID, lessonToMove.teacherIDs()) {
+	if f.coord.schedule.hasConflict(d, targetSlot, lessonToMove.groupIDs(), lessonToMove.teacherIDs()) {
 		return
 	}
 

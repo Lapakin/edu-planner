@@ -17,6 +17,7 @@ type Workload struct {
 	subGroupNumber         *uint64
 	cycleCommitteeID       uint64
 	isLab                  bool
+	isFlow                 bool
 }
 
 // workloadDistributor distributes Workloads across numerator and denominator weeks.
@@ -63,6 +64,11 @@ func (wd *workloadDistributor) distributeWorkloads(
 		numeratorLessons = append(numeratorLessons, numLessons...)
 		denominatorLessons = append(denominatorLessons, denomLessons...)
 	}
+
+	// Merge flow-eligible lessons (same subject + same teacher across several
+	// groups) into shared flow lessons, independently per week period.
+	numeratorLessons = mergeFlowLessons(numeratorLessons, wd.cfg)
+	denominatorLessons = mergeFlowLessons(denominatorLessons, wd.cfg)
 
 	return numeratorLessons, denominatorLessons, nil
 }
@@ -122,6 +128,12 @@ func (wd *workloadDistributor) createLessons(w *Workload, count int) []*lesson {
 			workloadID:       w.workloadDistributionID,
 			cycleCommitteeID: w.cycleCommitteeID,
 			isLab:            w.isLab,
+			// Only lecturer (non-lab) lessons of a flow discipline are flow-eligible.
+			// Eligibility is promoted to an actual flow only when merged.
+			flowEligible: w.isFlow && !w.isLab,
+			isFlow:       false,
+			flowID:       "",
+			flowOrigin:   nil,
 		}
 
 		if w.isSplitting && w.subGroupNumber != nil {
@@ -202,10 +214,12 @@ func buildWorkloadsFromDomain(
 			continue
 		}
 
-		// Resolve cycle committee ID from the discipline
+		// Resolve cycle committee ID and flow flag from the discipline
 		var cycleCommitteeID uint64
+		var isFlowDiscipline bool
 		if disc := disciplineByID[subjectID]; disc != nil {
 			cycleCommitteeID = disc.CycleCommitteeID
+			isFlowDiscipline = disc.IsFlow
 		}
 
 		for _, a := range distAssignments {
@@ -242,6 +256,7 @@ func buildWorkloadsFromDomain(
 				subGroupNumber:         nil,
 				cycleCommitteeID:       cycleCommitteeID,
 				isLab:                  isLab,
+				isFlow:                 isFlowDiscipline,
 			}
 
 			workloads = append(workloads, w)

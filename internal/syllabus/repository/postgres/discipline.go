@@ -31,6 +31,7 @@ func (r *DisciplineRepository) CreateDisciplines(ctx context.Context, discipline
 			short_name,
 			is_splitting,
 			is_subvention,
+			is_flow,
 			created_at
 		`)
 
@@ -41,6 +42,7 @@ func (r *DisciplineRepository) CreateDisciplines(ctx context.Context, discipline
 			d.ShortName,
 			d.IsSplitting,
 			d.IsSubvention,
+			d.IsFlow,
 			d.CreatedAt,
 		)
 	}
@@ -65,8 +67,9 @@ func (r *DisciplineRepository) GetDisciplineByID(ctx context.Context, id uint64)
 			d.cycle_committee_id,
 			d.name,
 			d.short_name,
-			d.is_splitting,	
+			d.is_splitting,
 			d.is_subvention,
+			d.is_flow,
 			d.created_at,
 			d.modified_at
 		`).
@@ -97,6 +100,7 @@ func (r *DisciplineRepository) FetchDisciplines(ctx context.Context, filters f.F
 			d.short_name,
 			d.is_splitting,
 			d.is_subvention,
+			d.is_flow,
 			d.created_at,
 			d.modified_at
 		`).
@@ -138,9 +142,10 @@ func (r *DisciplineRepository) UpdateDisciplines(ctx context.Context, discipline
 		AddVarCharColumn("short_name").
 		AddBoolColumn("is_splitting").
 		AddBoolColumn("is_subvention").
+		AddBoolColumn("is_flow").
 		AddTimeStampColumn("modified_at")
 
-	args := make([]any, 0, 7*len(disciplines))
+	args := make([]any, 0, 8*len(disciplines))
 	for _, d := range disciplines {
 		args = append(args,
 			d.ID,
@@ -149,6 +154,7 @@ func (r *DisciplineRepository) UpdateDisciplines(ctx context.Context, discipline
 			d.ShortName,
 			d.IsSplitting,
 			d.IsSubvention,
+			d.IsFlow,
 			d.ModifiedAt,
 		)
 	}

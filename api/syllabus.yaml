@@ -3344,6 +3344,17 @@ components:
           type: boolean
         is_subvention:
           type: boolean
+        is_flow:
+          type: boolean
+          description: >-
+            If true, this discipline is taught as a flow (потокова): a single
+            lecture shared by several groups at the same time. During schedule
+            generation, lecturer lessons of this discipline taught by the same
+            teacher to multiple groups are merged into one shared slot in a room
+            whose capacity covers the combined group sizes (subject to
+            allow_flow_lessons being enabled). Defaults to false.
+          default: false
+          example: false
         created_at:
           type: string
           format: date-time
@@ -3630,6 +3641,17 @@ components:
         no_gaps_in_group_schedule:
           type: boolean
           description: If true, a group's lessons on any given day must be consecutive with no gaps (default true)
+          default: true
+        allow_flow_lessons:
+          type: boolean
+          description: >-
+            If true, the generator may merge lecturer lessons of a flow
+            discipline (is_flow=true) taught by the same teacher to several
+            groups into a single shared slot (потокова пара), using a room whose
+            capacity covers the combined group sizes. When a common slot or a
+            large enough room cannot be found, it falls back to separate
+            per-group lessons and reports it in the schedule metadata. Defaults
+            to true.
           default: true
         created_at:
           type: string

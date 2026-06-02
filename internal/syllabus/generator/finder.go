@@ -109,9 +109,11 @@ func (f *finder) buildCacheKey(slots []int) string {
 	return strings.Join(parts, ",")
 }
 
-// findAllFreeSlots returns all lesson numbers not occupied by the group on the date.
-func (f *finder) findAllFreeSlots(sched *schedule, d date, groupID uint64) []int {
-	busy := sched.getScheduledLessonNumbers(d, groupID)
+// findAllFreeSlots returns all lesson numbers not occupied by any of the given
+// groups on the date. Passing several groups (a flow lesson) yields slots free for
+// all of them.
+func (f *finder) findAllFreeSlots(sched *schedule, d date, groupIDs []uint64) []int {
+	busy := sched.getScheduledLessonNumbersForGroups(d, groupIDs)
 	busySet := make(map[int]bool, len(busy))
 	for _, ln := range busy {
 		busySet[ln] = true

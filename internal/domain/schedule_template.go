@@ -71,6 +71,8 @@ type ScheduleLesson struct {
 	Type       LessonType           `json:"type"`
 	SubjectID  uint64               `json:"subject_id"`
 	IsLab      bool                 `json:"is_lab"`
+	IsFlow     bool                 `json:"is_flow,omitempty"`
+	FlowID     string               `json:"flow_id,omitempty"`
 	SubLessons []*ScheduleSubLesson `json:"sub_lessons"`
 }
 

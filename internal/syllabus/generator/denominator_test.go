@@ -86,7 +86,7 @@ func TestDenominatorReproducer_Reproduce_MirrorsNumerator(t *testing.T) {
 	cfg, coord, rng, numDates, denomDates, denomLesson := makeDenominatorScenario()
 
 	dr := newDenominatorReproducer(cfg, coord, rng)
-	err := dr.reproduce(numDates, denomDates, []*lesson{denomLesson}, []uint64{1})
+	err := dr.reproduce(numDates, denomDates, []*lesson{denomLesson}, []uint64{1}, newFlowDiagnostics())
 	if err != nil {
 		t.Fatalf("reproduce returned error: %v", err)
 	}
@@ -109,7 +109,7 @@ func TestDenominatorReproducer_Reproduce_EmptyNumerator(t *testing.T) {
 	// Empty numerator dates - reproduce should still succeed (remainder path)
 	dr := newDenominatorReproducer(cfg, coord, rng)
 	// When numerator is empty, the mirror loop is skipped but remaining lessons are scheduled
-	err := dr.reproduce([]date{}, denomDates, []*lesson{denomLesson}, []uint64{1})
+	err := dr.reproduce([]date{}, denomDates, []*lesson{denomLesson}, []uint64{1}, newFlowDiagnostics())
 	if err != nil {
 		t.Fatalf("reproduce with empty numerator returned error: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestDenominatorReproducer_Reproduce_NoRemainingLessons(t *testing.T) {
 
 	dr := newDenominatorReproducer(cfg, coord, rng)
 	// Pass empty denominator lessons - should succeed immediately
-	err := dr.reproduce(numDates, denomDates, []*lesson{}, []uint64{1})
+	err := dr.reproduce(numDates, denomDates, []*lesson{}, []uint64{1}, newFlowDiagnostics())
 	if err != nil {
 		t.Fatalf("reproduce with empty denom lessons returned error: %v", err)
 	}

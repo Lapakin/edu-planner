@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Lapakin/edu-planner/internal/domain"
 	"github.com/Lapakin/edu-planner/internal/syllabus/repository/postgres"
@@ -103,6 +104,21 @@ func TestFetchScheduleRestrictions(t *testing.T) {
 			assert.Equal(t, tc.expectedError, err)
 		})
 	}
+}
+
+// TestFetchScheduleRestrictions_AllowFlowLessonsPersists verifies the
+// allow_flow_lessons column round-trips through create and fetch with both values.
+func TestFetchScheduleRestrictions_AllowFlowLessonsPersists(t *testing.T) {
+	repo := postgres.NewScheduleRestrictionRepository(db)
+	ctx := context.Background()
+
+	enabled, err := repo.GetScheduleRestrictionByID(ctx, ta.ScheduleRestriction1.ID)
+	require.NoError(t, err)
+	assert.True(t, enabled.AllowFlowLessons, "ScheduleRestriction1 should allow flow lessons")
+
+	disabled, err := repo.GetScheduleRestrictionByID(ctx, ta.ScheduleRestriction2.ID)
+	require.NoError(t, err)
+	assert.False(t, disabled.AllowFlowLessons, "ScheduleRestriction2 should disallow flow lessons")
 }
 
 func TestUpdateScheduleRestrictions(t *testing.T) {

@@ -21,10 +21,13 @@ func (v *validator) validate(
 	dates []date,
 	groupIDs []uint64,
 ) error {
-	// Count required slots per group
+	// Count required slots per group. A flow lesson is attended by every group in
+	// its stream, so it counts once toward each of them.
 	groupLessonCount := make(map[uint64]int)
 	for _, l := range lessons {
-		groupLessonCount[l.groupID]++
+		for _, gid := range l.groupIDs() {
+			groupLessonCount[gid]++
+		}
 	}
 
 	// Calculate available slots per group (slots per day * number of days)

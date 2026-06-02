@@ -36,12 +36,13 @@ func (lim *limiter) canAddWeekLessonForTeacher(sched *schedule, weekDates []date
 
 // canPlaceLesson checks all limits for placing a lesson.
 func (lim *limiter) canPlaceLesson(sched *schedule, d date, weekDates []date, l *lesson) bool {
-	if !lim.canAddLessonForGroup(sched, d, l.groupID) {
-		return false
-	}
-
-	if !lim.canAddWeekLessonForGroup(sched, weekDates, l.groupID) {
-		return false
+	for _, gid := range l.groupIDs() {
+		if !lim.canAddLessonForGroup(sched, d, gid) {
+			return false
+		}
+		if !lim.canAddWeekLessonForGroup(sched, weekDates, gid) {
+			return false
+		}
 	}
 
 	for _, tid := range l.teacherIDs() {

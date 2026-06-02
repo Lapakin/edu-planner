@@ -112,7 +112,7 @@ func TestFinder_FindAllFreeSlots(t *testing.T) {
 	l := &lesson{groupID: groupID, subjectID: 10}
 	sched.add(d, 2, l)
 
-	free := f.findAllFreeSlots(sched, d, groupID)
+	free := f.findAllFreeSlots(sched, d, []uint64{groupID})
 	// Slots 1, 3, 4 should be free
 	if len(free) != 3 {
 		t.Errorf("expected 3 free slots, got %v", free)
@@ -130,7 +130,7 @@ func TestFinder_FindAllFreeSlots_AllFreeWhenEmpty(t *testing.T) {
 	sched := newSchedule()
 	d := date{year: 2024, month: 9, day: 2}
 
-	free := f.findAllFreeSlots(sched, d, 1)
+	free := f.findAllFreeSlots(sched, d, []uint64{1})
 	if len(free) != 4 {
 		t.Errorf("expected 4 free slots for empty schedule, got %v", free)
 	}
