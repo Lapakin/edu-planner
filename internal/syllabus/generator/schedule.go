@@ -64,7 +64,7 @@ func (s *schedule) getGroupDayLessons(d date, groupID uint64) []*lesson {
 	var result []*lesson
 	for _, lessons := range daySchedule {
 		for _, l := range lessons {
-			if l.groupID == groupID {
+			if l.hasGroup(groupID) {
 				result = append(result, l)
 			}
 		}
@@ -115,6 +115,27 @@ func (s *schedule) getTeacherWeekLessonCount(dates []date, teacherID uint64) int
 	return count
 }
 
+// getScheduledLessonNumbersForGroups returns sorted lesson numbers occupied on a
+// date by any of the given groups (the union of their busy slots). It is used to
+// place a flow lesson, which must be free for every participating group.
+func (s *schedule) getScheduledLessonNumbersForGroups(d date, groupIDs []uint64) []int {
+	if len(groupIDs) == 1 {
+		return s.getScheduledLessonNumbers(d, groupIDs[0])
+	}
+	numbersMap := make(map[int]bool)
+	for _, gid := range groupIDs {
+		for _, ln := range s.getScheduledLessonNumbers(d, gid) {
+			numbersMap[ln] = true
+		}
+	}
+	numbers := make([]int, 0, len(numbersMap))
+	for ln := range numbersMap {
+		numbers = append(numbers, ln)
+	}
+	sort.Ints(numbers)
+	return numbers
+}
+
 // getScheduledLessonNumbers returns sorted lesson numbers that have lessons on a date for a group.
 func (s *schedule) getScheduledLessonNumbers(d date, groupID uint64) []int {
 	daySchedule := s.dateToLessons[d]
@@ -124,7 +145,7 @@ func (s *schedule) getScheduledLessonNumbers(d date, groupID uint64) []int {
 	numbersMap := make(map[int]bool)
 	for ln, lessons := range daySchedule {
 		for _, l := range lessons {
-			if l.groupID == groupID {
+			if l.hasGroup(groupID) {
 				numbersMap[ln] = true
 				break
 			}
@@ -138,12 +159,14 @@ func (s *schedule) getScheduledLessonNumbers(d date, groupID uint64) []int {
 	return numbers
 }
 
-// hasConflict checks if placing a lesson would conflict with existing lessons.
-func (s *schedule) hasConflict(d date, lessonNumber int, groupID uint64, teacherIDs []uint64) bool {
+// hasConflict checks if placing a lesson for the given groups and teachers would
+// conflict with existing lessons at the slot. groupIDs may hold several groups for
+// a flow lesson; a conflict arises if any of them (or any teacher) is already busy.
+func (s *schedule) hasConflict(d date, lessonNumber int, groupIDs []uint64, teacherIDs []uint64) bool {
 	lessons := s.getLessons(d, lessonNumber)
 	for _, existing := range lessons {
 		// Group conflict
-		if existing.groupID == groupID {
+		if existing.hasAnyGroup(groupIDs) {
 			return true
 		}
 		// Teacher conflict
@@ -157,10 +180,10 @@ func (s *schedule) hasConflict(d date, lessonNumber int, groupID uint64, teacher
 }
 
 // findConflictingLesson returns the lesson that conflicts at a given slot.
-func (s *schedule) findConflictingLesson(d date, lessonNumber int, groupID uint64, teacherIDs []uint64) *lesson {
+func (s *schedule) findConflictingLesson(d date, lessonNumber int, groupIDs []uint64, teacherIDs []uint64) *lesson {
 	lessons := s.getLessons(d, lessonNumber)
 	for _, existing := range lessons {
-		if existing.groupID == groupID {
+		if existing.hasAnyGroup(groupIDs) {
 			return existing
 		}
 		for _, existingTID := range existing.teacherIDs() {

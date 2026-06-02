@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Lapakin/edu-planner/internal/domain"
 	"github.com/Lapakin/edu-planner/internal/syllabus/repository/postgres"
@@ -139,6 +140,22 @@ func TestFetchDisciplines(t *testing.T) {
 			assert.Equal(t, tc.expectedError, err)
 		})
 	}
+}
+
+// TestFetchDisciplines_FlowFlagPersists verifies the is_flow column round-trips
+// through create and fetch: Discipline1 is a regular discipline (false) and
+// Discipline2 is marked as a flow discipline (true).
+func TestFetchDisciplines_FlowFlagPersists(t *testing.T) {
+	repo := postgres.NewDisciplineRepository(db)
+	ctx := context.Background()
+
+	flowDiscipline, err := repo.GetDisciplineByID(ctx, ta.Discipline2.ID)
+	require.NoError(t, err)
+	assert.True(t, flowDiscipline.IsFlow, "Discipline2 should be a flow discipline")
+
+	regularDiscipline, err := repo.GetDisciplineByID(ctx, ta.Discipline1.ID)
+	require.NoError(t, err)
+	assert.False(t, regularDiscipline.IsFlow, "Discipline1 should not be a flow discipline")
 }
 
 func TestUpdateDisciplines(t *testing.T) {

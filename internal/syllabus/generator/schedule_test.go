@@ -221,7 +221,7 @@ func TestSchedule_HasConflict_GroupConflict(t *testing.T) {
 	s.add(d, 1, l)
 
 	// Same group at same slot
-	if !s.hasConflict(d, 1, 1, []uint64{99}) {
+	if !s.hasConflict(d, 1, []uint64{1}, []uint64{99}) {
 		t.Error("expected group conflict")
 	}
 }
@@ -234,7 +234,7 @@ func TestSchedule_HasConflict_TeacherConflict(t *testing.T) {
 	s.add(d, 1, l)
 
 	// Different group, same teacher
-	if !s.hasConflict(d, 1, 2, []uint64{42}) {
+	if !s.hasConflict(d, 1, []uint64{2}, []uint64{42}) {
 		t.Error("expected teacher conflict")
 	}
 }
@@ -247,12 +247,12 @@ func TestSchedule_HasConflict_NoConflict(t *testing.T) {
 	s.add(d, 1, l)
 
 	// Different group, different teacher, different slot
-	if s.hasConflict(d, 2, 2, []uint64{99}) {
+	if s.hasConflict(d, 2, []uint64{2}, []uint64{99}) {
 		t.Error("expected no conflict for different slot")
 	}
 
 	// Different group, different teacher, same slot
-	if s.hasConflict(d, 1, 2, []uint64{99}) {
+	if s.hasConflict(d, 1, []uint64{2}, []uint64{99}) {
 		t.Error("expected no conflict for different group and teacher")
 	}
 }
@@ -265,7 +265,7 @@ func TestSchedule_FindConflictingLesson_ReturnsConflict(t *testing.T) {
 	s.add(d, 1, l)
 
 	// Conflict by group ID
-	conflicting := s.findConflictingLesson(d, 1, 1, []uint64{99})
+	conflicting := s.findConflictingLesson(d, 1, []uint64{1}, []uint64{99})
 	if conflicting != l {
 		t.Error("expected to find conflicting lesson by group ID")
 	}
@@ -279,7 +279,7 @@ func TestSchedule_FindConflictingLesson_ReturnsNilWhenNone(t *testing.T) {
 	s.add(d, 1, l)
 
 	// No conflict
-	conflicting := s.findConflictingLesson(d, 1, 2, []uint64{99})
+	conflicting := s.findConflictingLesson(d, 1, []uint64{2}, []uint64{99})
 	if conflicting != nil {
 		t.Error("expected nil for no conflict")
 	}

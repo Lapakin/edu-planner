@@ -194,6 +194,12 @@ VALUES
     (52, 2, 'Вибіркова дисципліна загального каталогу: Теорія ігор',                  'ВД-ТІ',    TRUE,  TRUE,  FALSE, '2025-09-01 00:00:00')
 ON CONFLICT DO NOTHING;
 
+-- Mark shared lectures as flow (потокові): one lecture delivered to several groups
+-- at the same time. Вебпрограмування (disc20) is lectured by the same teacher (t11)
+-- to groups 3КН23 and 3ІПЗ23 in tetramester 2, so the generator merges them into a
+-- single flow lecture in the large lecture hall when allow_flow_lessons is enabled.
+UPDATE discipline SET is_flow = TRUE WHERE id = 20;
+
 INSERT INTO academic_year_to_discipline (academic_year_id, discipline_id)
 VALUES
     (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10),
@@ -223,11 +229,12 @@ VALUES
     (9,  '615',    'auditorium', FALSE, '2025-09-01 00:00:00'),
     (10, '132',    'auditorium', FALSE, '2025-09-01 00:00:00'),
     (11, 'Zoom-1', 'auditorium', FALSE, '2025-09-01 00:00:00'),
-    (12, 'Zoom-2', 'auditorium', FALSE, '2025-09-01 00:00:00')
+    (12, 'Zoom-2', 'auditorium', FALSE, '2025-09-01 00:00:00'),
+    (13, 'Лекційна-1', 'auditorium', FALSE, '2025-09-01 00:00:00')   -- велика лекційна для потокових пар
 ON CONFLICT DO NOTHING;
 
 INSERT INTO academic_year_to_room (academic_year_id, room_id)
-VALUES (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10),(1,11),(1,12)
+VALUES (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10),(1,11),(1,12),(1,13)
 ON CONFLICT DO NOTHING;
 
 -- Seed room capacities for demo data. Labs hold a whole group (28) so that
@@ -235,6 +242,11 @@ ON CONFLICT DO NOTHING;
 -- auditoriums are a touch larger (30).
 UPDATE room SET capacity = CASE room_type WHEN 'laboratory' THEN 28 ELSE 30 END
 WHERE capacity = 0;
+
+-- The lecture hall holds a whole flow (two groups together ≈ 56 students), so a
+-- flow lecture has a room large enough to share; without it every flow would fall
+-- back to separate per-group lessons.
+UPDATE room SET capacity = 120 WHERE id = 13;
 
 
 -- ─────────────────────────────────────────────────────────────
@@ -464,7 +476,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- no_gaps = true (fixer pass compresses slots to be consecutive)
 -- max_consecutive = 5 (teacher cannot teach more than 5 pairs in a row)
 -- time_priority = 'morning' (generator anchors each group's daily block to the earliest slots)
--- allow_flow = false (потокові заняття / спільні лекції вимкнені)
+-- allow_flow = true (потокові заняття / спільні лекції увімкнені — напр. лекція ВП t11 для 3КН23+3ІПЗ23)
 -- ─────────────────────────────────────────────────────────────
 
 INSERT INTO schedule_restriction (
@@ -475,7 +487,7 @@ INSERT INTO schedule_restriction (
     created_at
 )
 OVERRIDING SYSTEM VALUE
-VALUES (1, 1, 2, 4, 5, TRUE, 5, 'morning', FALSE, '2025-09-01 00:00:00')
+VALUES (1, 1, 2, 4, 5, TRUE, 5, 'morning', TRUE, '2025-09-01 00:00:00')
 ON CONFLICT (id) DO UPDATE SET
     academic_year_id                 = EXCLUDED.academic_year_id,
     min_group_lessons_per_day        = EXCLUDED.min_group_lessons_per_day,

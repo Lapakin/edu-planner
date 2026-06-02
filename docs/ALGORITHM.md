@@ -17,6 +17,7 @@ generator.go          — public API: parallel orchestration, timeout, first-res
 generation.go         — single attempt: calls each stage in order
 settings.go           — aggregates ScheduleTemplateSetting + ScheduleRestriction → settings
 workload.go           — converts domain assignments to lessons; distributes hours across weeks
+flow.go               — merges flow-eligible lectures into shared flow lessons; flow room feasibility, fallback, diagnostics
 validator.go          — pre-generation feasibility check; post-placement hard constraint check
 coordinator.go        — wires together all sub-components for one attempt
 availability.go       — per-participant, per-slot free/busy tracking
@@ -46,24 +47,32 @@ Each goroutine executes these stages in order. A failure at any stage causes the
                                → numeratorDates (odd weeks), denominatorDates (even weeks)
 4.  Distribute workloads       workloadDistributor.distributeWorkloads(workloads, numWeeks)
                                → numLessons, denomLessons (per-week count for each workload)
+                               → flow-eligible lectures merged into shared flow lessons
+                                 (mergeFlowLessons, per week period) — see "Flow Lessons"
 5.  Extract first-week dates   firstWeekDates(numeratorDates)
                                (template covers one repeating week, not the full semester)
 5a. Apply forbidden slots      generation.applyTeacherForbiddenSlots(availability, allDates)
                                → pre-marks forbidden teacher slots as unavailable before validation
 6.  Pre-generation validation  validator.validate(numLessons, firstWeek, groupIDs)
                                validator.validate(denomLessons, denomFirstWeek, groupIDs)
-7.  Random scheduling          randomScheduler.scheduleRandom(numLessons, firstWeek)
+6b. Flow pre-pass              partition flow lessons; drop flows no room can hold
+                               (flowRoomFeasible) → fallback; place remaining flows first;
+                               flows that find no shared slot fall back to per-group lessons
+7.  Random scheduling          randomScheduler.scheduleRandom(regularLessons, firstWeek)
                                → forbidden slots skipped; preferred slots weighted higher
                                → unscheduled (lessons that didn't fit randomly)
 8.  Gap compression            fixer.fixWeekSchedule(firstWeek, groupIDs)
 9.  Recursive scheduling       recursiveScheduler.schedule(unscheduled, firstWeek)
 10. Post-placement validation  validatePlacement(schedule, firstWeek, groupIDs, settings)
-11. Denominator reproduction   denominatorReproducer.reproduce(numDates, denomDates, denomLessons)
-    11a. Mirror numerator pattern to corresponding denominator days
-    11b. Gap compression for denominator
-    11c. Post-placement validation for denominator
+11. Denominator reproduction   denominatorReproducer.reproduce(numDates, denomDates, denomLessons, diag)
+    11a. Drop denominator flows no room can hold (flowRoomFeasible) → fallback
+    11b. Mirror numerator pattern to corresponding denominator days (flows mirror as a unit)
+    11c. Flow pre-pass for remaining flows, then gap compression for denominator
+    11d. Post-placement validation for denominator
 12. Room assignment            roomSelector.assignRooms(schedule)
+                               (a flow lesson gets ONE shared room ≥ Σ group sizes)
 13. Convert to ScheduleData    group first-week dates by weekday → WeekSchedule
+                               flow diagnostics written to ScheduleData.Metadata (JSON)
 ```
 
 ---
@@ -86,8 +95,9 @@ Applied by `limiter`, `availability`, `patternController`, and `schedule.hasConf
 
 | Constraint | Component |
 |---|---|
-| No double-booking a group | `schedule.hasConflict` |
+| No double-booking a group | `schedule.hasConflict` (checks **every** group of a lesson — a flow spans several) |
 | No double-booking a teacher | `schedule.hasConflict` |
+| Flow shared slot | `schedule.getScheduledLessonNumbersForGroups` + `availability.areFree` — a flow lesson is placed only at a slot free for **all** its groups (intersection of free intervals) |
 | Daily group lesson ceiling | `limiter.canAddLessonForGroup` |
 | Daily teacher lesson ceiling | `limiter.canAddLessonForTeacher` |
 | Weekly group lesson ceiling | `limiter.canAddWeekLessonForGroup` |
@@ -132,7 +142,7 @@ Applies additional hard caps on top of `ScheduleTemplateSetting`. The latest rec
 | `MaxConsecutiveTeacherLessons` | 4 | Maximum consecutive lesson slots for a teacher without a break |
 | `NoGapsInGroupSchedule` | true | Require consecutive lesson slots for each group each day |
 | `TimePriority` | none | Preference for scheduling lessons in the morning or afternoon |
-| `AllowFlowLessons` | true | Whether flow lessons (multiple groups in one room) are permitted |
+| `AllowFlowLessons` | true | Global switch for flow lessons. When `false`, no merging happens and every lecture is scheduled per group, exactly as before the feature. Per-discipline opt-in is `Discipline.IsFlow`; both must be true to form a flow |
 
 **Priority rule**: `effective max = min(LessonsPerClass-based max, restriction max)`. A restriction can only make limits more strict, never more lenient than the LessonsPerClass-based calculation.
 
@@ -199,9 +209,54 @@ A standard lesson for a whole group taught by one teacher. One `lesson` with one
 
 The group is divided into sub-groups. Each sub-group has its own `internalSubLesson` (independent teacher, independent room). The `lesson` groups all sub-lessons so their slots can be coordinated. A group is split when `WorkloadDistribution.IsSplitting = true` and a `subGroupNumber` is present.
 
-### Flow (not yet fully implemented)
+### Flow (`isFlow`)
 
-Multiple groups share one room with one teacher. Represented as a single `lesson` with multiple `internalSubLesson` entries across different groups.
+Several groups attend one lecture together (потокова пара) — one teacher, one room, one slot. Represented as a single `lesson` with one `internalSubLesson` per group, all sharing the same teacher. The output `ScheduleLesson` has `Type = flow`, `IsFlow = true`, and a `FlowID` identifying the stream. See the dedicated **Flow Lessons** section below.
+
+---
+
+## Flow Lessons (Потокові пари)
+
+A **flow lesson** is one lecture delivered to several groups simultaneously — one teacher, one room, one time slot — the typical case being a stream lecture shared by parallel groups. It is gated by two switches that **both** must be true: the per-discipline `Discipline.IsFlow` and the global `ScheduleRestriction.AllowFlowLessons`. When either is off, nothing is merged and generation behaves exactly as it did before the feature.
+
+### Eligibility and merging (`flow.go`)
+
+During workload distribution (stage 4), `mergeFlowLessons` runs once per week period:
+
+1. A lesson is a **candidate** when it is `flowEligible` (a flow discipline's non-lab lecturer lesson), `formatUnited`, with at least one sub-lesson. `flowEligible` is set in `workload.go` from `Discipline.IsFlow && !isLab`. Eligibility alone is **not** a flow — only the merged result is.
+2. Candidates are grouped by `(subjectID, teacherID)`. Within each stream, while **two or more** distinct groups still have an unconsumed lesson, one lesson is pulled from each and merged into a single flow `lesson` carrying one `internalSubLesson` per group. `flowOrigin` retains the constituents for fallback; `flowID = "flow-<subject>-<teacher>"`.
+3. Surplus lessons (a group with more lectures than its partners) and lonely candidates (no second group) stay as ordinary single-group lessons.
+
+Because merging happens per period independently, the numerator and denominator each form their own flow lessons.
+
+### Multi-group placement
+
+The placement engine is **group-set aware**. A flow lesson exposes all its groups via `lesson.groupIDs()` / `hasGroup()` / `hasAnyGroup()`, and every component that used a single `groupID` now considers the whole set:
+
+- `schedule.hasConflict` / `findConflictingLesson` — conflict if **any** group (or the teacher) is already busy.
+- `schedule.getScheduledLessonNumbersForGroups` — the union of busy slots across all groups, so a flow only lands where **all** groups are free (the intersection of their free intervals).
+- `limiter.canPlaceLesson` — daily/weekly group ceilings checked for every group.
+- `validator.validate` / `validatePlacement` — a flow counts once toward each participating group.
+- The fixer treats flow lessons as **immovable anchors** (relocating one for a single group would disturb the others); non-flow lessons still compress around them, and any residual gap is resolved by a retry with a new seed.
+
+Flow lessons are placed **first** (stage 6b) because they are the most constrained.
+
+### Rooms
+
+A flow needs one room large enough for everyone. `flowRoomFeasible` checks that some room's capacity covers the **sum** of all participating groups' sizes (a capacity of 0 = unlimited; unknown sizes impose no constraint). At room assignment, `assignFlowRoom` gives every sub-lesson of the flow the **same** room.
+
+### Fallback and diagnostics
+
+A flow falls back to separate per-group lessons (`lesson.unmerge()`) when:
+
+- no room can hold the combined size (`flowRoomFeasible` is false), or
+- no shared slot is found during the flow pre-pass.
+
+The unmerged constituents re-enter the normal random + recursive pipeline, so **a flow never causes generation to fail** — at worst it degrades to ordinary lessons. Each attempt records flow outcomes in a `flowDiagnostics`, serialized into `ScheduleData.Metadata` as JSON:
+
+```json
+{"flow_lessons": 2, "flow_fallbacks": 1, "fallback_flow_ids": ["flow-20-11"]}
+```
 
 ---
 
@@ -274,10 +329,11 @@ Room assignment happens **after** all lessons are placed (stage 12), as a separa
 
 The `roomSelector` selects rooms greedily:
 1. For each lesson slot (date + lesson number), collect rooms already assigned in that slot.
-2. For each `internalSubLesson` without a room:
+2. **Flow lessons** are handled as a unit (`assignFlowRoom`): one room sized to the **combined** group size (`Σ group sizes`) is chosen and assigned to every sub-lesson, so all groups of the stream sit together.
+3. For each remaining `internalSubLesson` without a room:
    a. If the lesson's `cycleCommitteeID` has designated lab rooms (`CycleCommitteeLabRoom` entries), prefer those rooms.
-   b. Otherwise, pick the **least-used room** from the general pool that is not already occupied in this slot.
-3. If all preferred or available rooms are occupied in the slot, fall back to the globally least-used room (double-booking is allowed as a last resort).
+   b. Otherwise, pick the **least-used room** from the general pool that is not already occupied in this slot — restricted to rooms whose capacity fits the group (split sub-lesson ≈ half a group; united = whole group).
+4. If all preferred or available rooms are occupied in the slot, fall back to the globally least-used fitting room (double-booking is allowed as a last resort).
 
 Usage counts persist across the full schedule so that room load is balanced over the week.
 

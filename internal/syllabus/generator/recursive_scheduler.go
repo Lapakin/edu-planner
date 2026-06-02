@@ -61,14 +61,14 @@ func (rs *recursiveScheduler) tryScheduleLesson(l *lesson, dates []date, weekDat
 			continue
 		}
 
-		freeSlots := rs.coord.finder.findAllFreeSlots(rs.coord.schedule, d, l.groupID)
+		freeSlots := rs.coord.finder.findAllFreeSlots(rs.coord.schedule, d, l.groupIDs())
 
 		for _, ln := range freeSlots {
 			if rs.isForbiddenForTeachers(d, l.teacherIDs(), ln) {
 				continue
 			}
-			if !rs.coord.schedule.hasConflict(d, ln, l.groupID, l.teacherIDs()) {
-				allParticipants := append([]uint64{l.groupID}, l.teacherIDs()...)
+			if !rs.coord.schedule.hasConflict(d, ln, l.groupIDs(), l.teacherIDs()) {
+				allParticipants := append(l.groupIDs(), l.teacherIDs()...)
 				if rs.coord.availability.areFree(d, allParticipants, ln) &&
 					!rs.violatesConsecutive(d, l.teacherIDs(), ln) {
 					// Place directly
@@ -85,13 +85,13 @@ func (rs *recursiveScheduler) tryScheduleLesson(l *lesson, dates []date, weekDat
 			continue
 		}
 
-		freeSlots := rs.coord.finder.findAllFreeSlots(rs.coord.schedule, d, l.groupID)
+		freeSlots := rs.coord.finder.findAllFreeSlots(rs.coord.schedule, d, l.groupIDs())
 
 		for _, ln := range freeSlots {
 			if rs.isForbiddenForTeachers(d, l.teacherIDs(), ln) {
 				continue
 			}
-			conflicting := rs.coord.schedule.findConflictingLesson(d, ln, l.groupID, l.teacherIDs())
+			conflicting := rs.coord.schedule.findConflictingLesson(d, ln, l.groupIDs(), l.teacherIDs())
 			if conflicting == nil {
 				continue
 			}
@@ -143,7 +143,7 @@ func (rs *recursiveScheduler) violatesConsecutive(d date, teacherIDs []uint64, l
 // placeLesson places a lesson and updates all tracking.
 func (rs *recursiveScheduler) placeLesson(d date, ln int, l *lesson) {
 	rs.coord.schedule.add(d, ln, l)
-	allParticipants := append([]uint64{l.groupID}, l.teacherIDs()...)
+	allParticipants := append(l.groupIDs(), l.teacherIDs()...)
 	for _, pid := range allParticipants {
 		rs.coord.availability.markBusy(d, pid, ln)
 	}
@@ -153,7 +153,7 @@ func (rs *recursiveScheduler) placeLesson(d date, ln int, l *lesson) {
 // removeLesson removes a lesson and updates all tracking.
 func (rs *recursiveScheduler) removeLesson(d date, ln int, l *lesson) {
 	rs.coord.schedule.remove(d, ln, l)
-	allParticipants := append([]uint64{l.groupID}, l.teacherIDs()...)
+	allParticipants := append(l.groupIDs(), l.teacherIDs()...)
 	for _, pid := range allParticipants {
 		rs.coord.availability.markFree(d, pid, ln)
 	}

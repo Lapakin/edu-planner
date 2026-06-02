@@ -121,6 +121,7 @@ const ENTITY_CONFIGS = {
         ref: 'cycle-committees', refLabel: 'name', required: true },
       { key: 'is_splitting',  type: 'bool', labelKey: 'fields.isSplitting' },
       { key: 'is_subvention', type: 'bool', labelKey: 'fields.isSubvention' },
+      { key: 'is_flow',       type: 'bool', labelKey: 'fields.isFlow' },
     ],
     filters: [
       { key: 'cycle_committee_id', type: 'select', labelKey: 'fields.cycleCommittee',

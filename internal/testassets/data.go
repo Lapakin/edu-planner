@@ -203,6 +203,7 @@ var (
 		ShortName:        "Phys",
 		IsSplitting:      true,
 		IsSubvention:     false,
+		IsFlow:           true,
 	}
 	DisciplinesArray = domain.Disciplines{Discipline1, Discipline2}
 
@@ -340,7 +341,7 @@ var (
 		MaxTeacherLessonsPerDay:      4,
 		MaxConsecutiveTeacherLessons: 3,
 		TimePriority:                 domain.TimePriorityMorning,
-		AllowFlowLessons:             true,
+		AllowFlowLessons:             false,
 		NoGapsInGroupSchedule:        false,
 	}
 	ScheduleRestrictionsArray = domain.ScheduleRestrictions{ScheduleRestriction1, ScheduleRestriction2}

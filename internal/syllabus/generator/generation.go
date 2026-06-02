@@ -68,6 +68,11 @@ func (g *generation) exec() (*domain.ScheduleData, error) {
 		return nil, ErrWorkloadDistribution
 	}
 
+	// Flow diagnostics for this attempt: how many flow lessons formed and which
+	// (if any) fell back to separate per-group lessons.
+	diag := newFlowDiagnostics()
+	diag.countFlows(numLessons, denomLessons)
+
 	// 5. Extract first-week dates — the template represents one repeating week,
 	// so all scheduling must happen within these dates only.
 	numFirstWeek := firstWeekDates(numeratorDates, g.cfg.educationWeek)
@@ -87,9 +92,33 @@ func (g *generation) exec() (*domain.ScheduleData, error) {
 		}
 	}
 
-	// 6. Random scheduling for numerator (first week only)
+	// 6. Random scheduling for numerator (first week only).
 	randomSched := newRandomScheduler(g.cfg, coord, g.rng)
-	unscheduled := randomSched.scheduleRandom(numLessons, numFirstWeek, numFirstWeek)
+
+	// 6a. Place flow lessons first — they are the most constrained (a shared slot
+	// across several groups plus a room large enough for all of them). A flow
+	// lesson that cannot be placed falls back to its separate per-group lessons.
+	flowLessons, regularLessons := partitionFlowLessons(numLessons)
+	if len(flowLessons) > 0 {
+		// Drop flows that no room can hold (combined group size) before placement.
+		placeableFlows := make([]*lesson, 0, len(flowLessons))
+		for _, fl := range flowLessons {
+			if flowRoomFeasible(g.cfg, fl) {
+				placeableFlows = append(placeableFlows, fl)
+				continue
+			}
+			regularLessons = append(regularLessons, fl.unmerge()...)
+			diag.recordFallback(fl)
+		}
+
+		unplacedFlows := randomSched.scheduleRandom(placeableFlows, numFirstWeek, numFirstWeek)
+		for _, fl := range unplacedFlows {
+			regularLessons = append(regularLessons, fl.unmerge()...)
+			diag.recordFallback(fl)
+		}
+	}
+
+	unscheduled := randomSched.scheduleRandom(regularLessons, numFirstWeek, numFirstWeek)
 
 	// 7. Fix week schedule (gap minimization)
 	coord.fixer.fixWeekSchedule(numFirstWeek, g.groupIDs)
@@ -113,7 +142,7 @@ func (g *generation) exec() (*domain.ScheduleData, error) {
 	if len(denominatorDates) > 0 && len(denomLessons) > 0 {
 		denomFirstWeek := firstWeekDates(denominatorDates, g.cfg.educationWeek)
 		denomReproducer := newDenominatorReproducer(g.cfg, coord, g.rng)
-		if err := denomReproducer.reproduce(numFirstWeek, denomFirstWeek, denomLessons, g.groupIDs); err != nil {
+		if err := denomReproducer.reproduce(numFirstWeek, denomFirstWeek, denomLessons, g.groupIDs, diag); err != nil {
 			return nil, err
 		}
 
@@ -130,7 +159,9 @@ func (g *generation) exec() (*domain.ScheduleData, error) {
 	coord.roomSelector.assignRooms(coord.schedule)
 
 	// 11. Convert to output format
-	return g.convertToScheduleData(coord.schedule, numeratorDates, denominatorDates), nil
+	data := g.convertToScheduleData(coord.schedule, numeratorDates, denominatorDates)
+	data.Metadata = diag.metadata()
+	return data, nil
 }
 
 // applyTeacherForbiddenSlots pre-marks forbidden teacher slots as unavailable.
@@ -224,6 +255,9 @@ func (g *generation) convertLesson(l *lesson) *domain.ScheduleLesson {
 	case formatSplit:
 		lessonType = domain.LessonTypeSplit
 	}
+	if l.isFlow {
+		lessonType = domain.LessonTypeFlow
+	}
 
 	subLessons := make([]*domain.ScheduleSubLesson, 0, len(l.subLessons))
 	for _, sl := range l.subLessons {
@@ -244,6 +278,8 @@ func (g *generation) convertLesson(l *lesson) *domain.ScheduleLesson {
 		Type:       lessonType,
 		SubjectID:  l.subjectID,
 		IsLab:      l.isLab,
+		IsFlow:     l.isFlow,
+		FlowID:     l.flowID,
 		SubLessons: subLessons,
 	}
 }

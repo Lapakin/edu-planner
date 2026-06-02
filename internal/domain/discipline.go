@@ -12,6 +12,7 @@ type Discipline struct {
 	ShortName        string     `json:"short_name" db:"short_name"`
 	IsSplitting      bool       `json:"is_splitting" db:"is_splitting"`
 	IsSubvention     bool       `json:"is_subvention" db:"is_subvention"`
+	IsFlow           bool       `json:"is_flow" db:"is_flow"`
 	IsDeleted        bool       `json:"is_deleted" db:"is_deleted"`
 	CreatedAt        time.Time  `json:"created_at" db:"created_at"`
 	ModifiedAt       *time.Time `json:"modified_at" db:"modified_at"`

@@ -91,6 +91,10 @@ func (rs *roomSelector) assignRooms(sched *schedule) {
 
 			// Second pass: assign rooms to sub-lessons without rooms
 			for _, l := range daySchedule[ln] {
+				if l.isFlow {
+					rs.assignFlowRoom(l, usedRooms)
+					continue
+				}
 				for _, sl := range l.subLessons {
 					if sl.roomID == 0 {
 						required := rs.requiredCapacity(l, sl)
@@ -101,6 +105,45 @@ func (rs *roomSelector) assignRooms(sched *schedule) {
 				}
 			}
 		}
+	}
+}
+
+// flowRequiredCapacity returns the combined number of seats a flow lesson needs:
+// the sum of the sizes of all participating groups. A return of 0 means at least
+// one group's size is unknown, imposing no hard constraint.
+func (rs *roomSelector) flowRequiredCapacity(l *lesson) int {
+	total := 0
+	for _, gid := range l.groupIDs() {
+		size := rs.groupSizes[gid]
+		if size <= 0 {
+			return 0
+		}
+		total += size
+	}
+	return total
+}
+
+// assignFlowRoom assigns a single shared room to every sub-lesson of a flow lesson.
+// The room must hold the combined size of all groups in the stream.
+func (rs *roomSelector) assignFlowRoom(l *lesson, usedInSlot map[uint64]bool) {
+	// A flow room may already be (partly) assigned on a mirrored denominator slot;
+	// reuse the first assigned room if present.
+	roomID := uint64(0)
+	for _, sl := range l.subLessons {
+		if sl.roomID != 0 {
+			roomID = sl.roomID
+			break
+		}
+	}
+	if roomID == 0 {
+		required := rs.flowRequiredCapacity(l)
+		roomID = rs.selectRoom(usedInSlot, required)
+	}
+	for _, sl := range l.subLessons {
+		sl.roomID = roomID
+	}
+	if roomID != 0 {
+		usedInSlot[roomID] = true
 	}
 }
 

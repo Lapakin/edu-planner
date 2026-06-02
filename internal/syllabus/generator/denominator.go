@@ -30,7 +30,21 @@ func (dr *denominatorReproducer) reproduce(
 	denominatorDates []date,
 	denominatorLessons []*lesson,
 	groupIDs []uint64,
+	diag *flowDiagnostics,
 ) error {
+	// Flows that no room can hold fall back to separate per-group lessons before
+	// any mirroring, so they never occupy a slot they cannot get a room for.
+	processed := make([]*lesson, 0, len(denominatorLessons))
+	for _, l := range denominatorLessons {
+		if l.isFlow && !flowRoomFeasible(dr.cfg, l) {
+			processed = append(processed, l.unmerge()...)
+			diag.recordFallback(l)
+			continue
+		}
+		processed = append(processed, l)
+	}
+	denominatorLessons = processed
+
 	// Group numerator dates by weekday
 	numByWeekday := groupDatesByWeekday(numeratorDates)
 	denomByWeekday := groupDatesByWeekday(denominatorDates)
@@ -74,11 +88,23 @@ func (dr *denominatorReproducer) reproduce(
 		denomFirstWeek := firstWeekDates(denominatorDates, dr.cfg.educationWeek)
 
 		randomSched := newRandomScheduler(dr.cfg, dr.coord, dr.rng)
-		remaining = randomSched.scheduleRandom(remaining, denomFirstWeek, denomFirstWeek)
 
-		if len(remaining) > 0 {
+		// Flow lessons that did not mirror get a dedicated pass: if no shared slot
+		// can be found, fall back to per-group lessons and record the fallback.
+		flowLessons, regular := partitionFlowLessons(remaining)
+		if len(flowLessons) > 0 {
+			unplaced := randomSched.scheduleRandom(flowLessons, denomFirstWeek, denomFirstWeek)
+			for _, fl := range unplaced {
+				regular = append(regular, fl.unmerge()...)
+				diag.recordFallback(fl)
+			}
+		}
+
+		regular = randomSched.scheduleRandom(regular, denomFirstWeek, denomFirstWeek)
+
+		if len(regular) > 0 {
 			recursiveSched := newRecursiveScheduler(dr.cfg, dr.coord)
-			if err := recursiveSched.schedule(remaining, denomFirstWeek, denomFirstWeek); err != nil {
+			if err := recursiveSched.schedule(regular, denomFirstWeek, denomFirstWeek); err != nil {
 				return err
 			}
 		}
@@ -118,8 +144,8 @@ func (dr *denominatorReproducer) mirrorDay(
 			}
 
 			// Check if we can place it at the same slot
-			allParticipants := append([]uint64{matched.groupID}, matched.teacherIDs()...)
-			if dr.coord.schedule.hasConflict(targetDate, ln, matched.groupID, matched.teacherIDs()) {
+			allParticipants := append(matched.groupIDs(), matched.teacherIDs()...)
+			if dr.coord.schedule.hasConflict(targetDate, ln, matched.groupIDs(), matched.teacherIDs()) {
 				continue
 			}
 			if !dr.coord.availability.areFree(targetDate, allParticipants, ln) {
