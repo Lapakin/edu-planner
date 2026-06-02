@@ -100,6 +100,8 @@ func (g *generation) exec() (*domain.ScheduleData, error) {
 		if err := recursiveSched.schedule(unscheduled, numFirstWeek, numFirstWeek); err != nil {
 			return nil, err
 		}
+		// Re-compress gaps and re-apply time priority to the recursively placed lessons.
+		coord.fixer.fixWeekSchedule(numFirstWeek, g.groupIDs)
 	}
 
 	// 8a. Post-placement validation (no-gaps and min lessons per day)

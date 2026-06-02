@@ -127,7 +127,20 @@ func (s *ScheduleTemplateService) GenerateScheduleTemplate(ctx context.Context, 
 		return nil, ErrInternal
 	}
 
-	// 6. Fetch workload distributions and filter to relevant groups
+	// 6. Fetch study plans (needed to scope workload to the requested semester)
+	studyPlans, err := s.rm.NewStudyPlanRepo(tx).FetchStudyPlans(ctx, make(f.Filters))
+	if err != nil {
+		return nil, ErrInternal
+	}
+	studyPlanByID := make(map[uint64]*domain.StudyPlan, len(studyPlans))
+	for _, sp := range studyPlans {
+		studyPlanByID[sp.ID] = sp
+	}
+
+	// 6a. Fetch workload distributions and filter to (relevant groups) AND (this semester).
+	// A distribution belongs to a semester via its study plan's semester_number, which in
+	// this dataset encodes the scheduling semester (tetramester) id. This lets one group
+	// carry different workloads in different semesters and be scheduled per semester.
 	distributions, err := s.rm.NewWorkloadDistributionRepo(tx).FetchWorkloadDistributions(ctx, make(f.Filters))
 	if err != nil {
 		return nil, ErrInternal
@@ -136,11 +149,17 @@ func (s *ScheduleTemplateService) GenerateScheduleTemplate(ctx context.Context, 
 	for _, id := range groupIDs {
 		groupIDSet[id] = true
 	}
+	semesterNumber := int(req.SemesterID)
 	var relevantDistributions domain.WorkloadDistributions
 	for _, d := range distributions {
-		if groupIDSet[d.GroupID] {
-			relevantDistributions = append(relevantDistributions, d)
+		if !groupIDSet[d.GroupID] {
+			continue
 		}
+		sp := studyPlanByID[d.StudyPlanID]
+		if sp == nil || sp.SemesterNumber == nil || *sp.SemesterNumber != semesterNumber {
+			continue
+		}
+		relevantDistributions = append(relevantDistributions, d)
 	}
 
 	// 7. Fetch workload assignments filtered to relevant distributions
@@ -157,12 +176,6 @@ func (s *ScheduleTemplateService) GenerateScheduleTemplate(ctx context.Context, 
 		if distIDSet[a.WorkloadDistributionID] {
 			relevantAssignments = append(relevantAssignments, a)
 		}
-	}
-
-	// 8. Fetch study plans
-	studyPlans, err := s.rm.NewStudyPlanRepo(tx).FetchStudyPlans(ctx, make(f.Filters))
-	if err != nil {
-		return nil, ErrInternal
 	}
 
 	// 9. Fetch rooms
