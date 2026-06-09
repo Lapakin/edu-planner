@@ -2935,6 +2935,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await App.checkSetup();
       App.setupHashRouter();
       location.hash = '#/home';
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
     } catch (e) {
       let errMsg;
       if (e.message === 'unauthorized' || e.message.includes('401')) {
