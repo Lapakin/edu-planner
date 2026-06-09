@@ -75,6 +75,7 @@ const App = {
   cache: {},
   currentMgr: null,
   _navGuardActive: false,
+  _hashRouterReady: false,
 
   // ── Init ───────────────────────────────────────────────────
   async init() {
@@ -152,6 +153,8 @@ const App = {
 
   // ── Router ─────────────────────────────────────────────────
   setupHashRouter() {
+    if (this._hashRouterReady) return;
+    this._hashRouterReady = true;
     window.addEventListener('hashchange', async (e) => {
       const newHash = location.hash || '#/home';
       if (this.currentMgr?.isDirty() && !this._navGuardActive) {
@@ -280,7 +283,12 @@ const App = {
     try {
       const rows = await Api.get(cfg.apiPath);
       this.cache[entityKey] = rows || [];
-    } catch { this.cache[entityKey] = []; }
+    } catch (e) {
+      // Don't cache an empty result for auth failures (e.g. a stale token
+      // rejected right before login) - leave it uncached so the next
+      // ensureCache call retries with the fresh token.
+      if (e.message !== 'unauthorized') this.cache[entityKey] = [];
+    }
   },
 
   async refreshCache(apiPath) {
@@ -2935,6 +2943,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await App.checkSetup();
       App.setupHashRouter();
       location.hash = '#/home';
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
     } catch (e) {
       let errMsg;
       if (e.message === 'unauthorized' || e.message.includes('401')) {
