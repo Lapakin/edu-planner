@@ -25,6 +25,19 @@ const ENTITY_CONFIGS = {
         handler: (row, mgr) => App.toggleAcademicYear(row, mgr),
       },
     ],
+    validate: (rows, newRows) => {
+      const messages = [], cells = [];
+      [...rows, ...newRows].forEach(row => {
+        const id = row._tempId ?? row.id;
+        if (row.start_date && row.end_date &&
+            String(row.start_date).slice(0, 10) >= String(row.end_date).slice(0, 10)) {
+          if (!messages.includes(t('validation.academicYearDateOrder')))
+            messages.push(t('validation.academicYearDateOrder'));
+          cells.push({ id, field: 'start_date' }, { id, field: 'end_date' });
+        }
+      });
+      return { messages, cells };
+    },
   },
 
   'semesters': {
@@ -36,6 +49,19 @@ const ENTITY_CONFIGS = {
       { key: 'period_end',   type: 'date', labelKey: 'fields.periodEnd',   required: true },
     ],
     filters: [],
+    validate: (rows, newRows) => {
+      const messages = [], cells = [];
+      [...rows, ...newRows].forEach(row => {
+        const id = row._tempId ?? row.id;
+        if (row.period_start && row.period_end &&
+            String(row.period_start).slice(0, 10) >= String(row.period_end).slice(0, 10)) {
+          if (!messages.includes(t('validation.semesterDateOrder')))
+            messages.push(t('validation.semesterDateOrder'));
+          cells.push({ id, field: 'period_start' }, { id, field: 'period_end' });
+        }
+      });
+      return { messages, cells };
+    },
   },
 
   'departments': {
@@ -68,6 +94,22 @@ const ENTITY_CONFIGS = {
           { value: 'laboratory', labelKey: 'roomTypes.laboratory' },
         ] },
     ],
+    validate: (rows, newRows) => {
+      const messages = [], cells = [], seen = new Map();
+      [...rows, ...newRows].forEach(row => {
+        const id = row._tempId ?? row.id;
+        if (!row.name) return;
+        const key = String(row.name).toLowerCase().trim();
+        if (seen.has(key)) {
+          if (!messages.includes(t('validation.duplicateName')))
+            messages.push(t('validation.duplicateName'));
+          cells.push({ id, field: 'name' }, { id: seen.get(key), field: 'name' });
+        } else {
+          seen.set(key, id);
+        }
+      });
+      return { messages, cells };
+    },
   },
 
   'specialties': {
@@ -85,6 +127,30 @@ const ENTITY_CONFIGS = {
       { key: 'department_id', type: 'select', labelKey: 'fields.department',
         ref: 'departments', refLabel: 'name' },
     ],
+    validate: (rows, newRows) => {
+      const messages = [], cells = [];
+      const seenShort = new Map(), seenCode = new Map();
+      [...rows, ...newRows].forEach(row => {
+        const id = row._tempId ?? row.id;
+        if (row.short_name) {
+          const key = String(row.short_name).toLowerCase().trim();
+          if (seenShort.has(key)) {
+            if (!messages.includes(t('validation.duplicateShortName')))
+              messages.push(t('validation.duplicateShortName'));
+            cells.push({ id, field: 'short_name' }, { id: seenShort.get(key), field: 'short_name' });
+          } else { seenShort.set(key, id); }
+        }
+        if (row.specialty_code) {
+          const key = String(row.specialty_code).toLowerCase().trim();
+          if (seenCode.has(key)) {
+            if (!messages.includes(t('validation.duplicateSpecialtyCode')))
+              messages.push(t('validation.duplicateSpecialtyCode'));
+            cells.push({ id, field: 'specialty_code' }, { id: seenCode.get(key), field: 'specialty_code' });
+          } else { seenCode.set(key, id); }
+        }
+      });
+      return { messages, cells };
+    },
   },
 
   'cycle-committees': {
@@ -127,6 +193,20 @@ const ENTITY_CONFIGS = {
       { key: 'cycle_committee_id', type: 'select', labelKey: 'fields.cycleCommittee',
         ref: 'cycle-committees', refLabel: 'name' },
     ],
+    validate: (rows, newRows) => {
+      const messages = [], cells = [], seen = new Map();
+      [...rows, ...newRows].forEach(row => {
+        const id = row._tempId ?? row.id;
+        if (!row.short_name) return;
+        const key = String(row.short_name).toLowerCase().trim();
+        if (seen.has(key)) {
+          if (!messages.includes(t('validation.duplicateShortName')))
+            messages.push(t('validation.duplicateShortName'));
+          cells.push({ id, field: 'short_name' }, { id: seen.get(key), field: 'short_name' });
+        } else { seen.set(key, id); }
+      });
+      return { messages, cells };
+    },
   },
 
   'groups': {
@@ -148,6 +228,27 @@ const ENTITY_CONFIGS = {
       { key: 'specialty_id', type: 'select', labelKey: 'fields.specialty',
         ref: 'specialties', refLabel: 'name' },
     ],
+    validate: (rows, newRows) => {
+      const messages = [], cells = [], seen = new Map();
+      [...rows, ...newRows].forEach(row => {
+        const id = row._tempId ?? row.id;
+        if (row.education_start && row.education_end &&
+            String(row.education_start).slice(0, 10) >= String(row.education_end).slice(0, 10)) {
+          if (!messages.includes(t('validation.educationDateOrder')))
+            messages.push(t('validation.educationDateOrder'));
+          cells.push({ id, field: 'education_start' }, { id, field: 'education_end' });
+        }
+        if (row.name) {
+          const key = String(row.name).toLowerCase().trim();
+          if (seen.has(key)) {
+            if (!messages.includes(t('validation.duplicateName')))
+              messages.push(t('validation.duplicateName'));
+            cells.push({ id, field: 'name' }, { id: seen.get(key), field: 'name' });
+          } else { seen.set(key, id); }
+        }
+      });
+      return { messages, cells };
+    },
   },
 
   'group-semesters': {
@@ -167,6 +268,19 @@ const ENTITY_CONFIGS = {
       { key: 'group_id', type: 'select', labelKey: 'fields.group',
         ref: 'groups', refLabel: 'name' },
     ],
+    validate: (rows, newRows) => {
+      const messages = [], cells = [];
+      [...rows, ...newRows].forEach(row => {
+        const id = row._tempId ?? row.id;
+        if (row.start_date && row.end_date &&
+            String(row.start_date).slice(0, 10) >= String(row.end_date).slice(0, 10)) {
+          if (!messages.includes(t('validation.semesterDateOrder')))
+            messages.push(t('validation.semesterDateOrder'));
+          cells.push({ id, field: 'start_date' }, { id, field: 'end_date' });
+        }
+      });
+      return { messages, cells };
+    },
   },
 
   'bell-schedules': {
@@ -179,6 +293,26 @@ const ENTITY_CONFIGS = {
       { key: 'end_time',      type: 'text',   labelKey: 'fields.endTime',      required: true },
     ],
     filters: [],
+    validate: (rows, newRows) => {
+      const messages = [], cells = [], seen = new Map();
+      [...rows, ...newRows].forEach(row => {
+        const id = row._tempId ?? row.id;
+        if (row.start_time && row.end_time && row.start_time >= row.end_time) {
+          if (!messages.includes(t('validation.timeOrder')))
+            messages.push(t('validation.timeOrder'));
+          cells.push({ id, field: 'start_time' }, { id, field: 'end_time' });
+        }
+        if (row.lesson_number !== null && row.lesson_number !== undefined && row.lesson_number !== '') {
+          const key = String(row.lesson_number);
+          if (seen.has(key)) {
+            if (!messages.includes(t('validation.duplicateLessonNumber')))
+              messages.push(t('validation.duplicateLessonNumber'));
+            cells.push({ id, field: 'lesson_number' }, { id: seen.get(key), field: 'lesson_number' });
+          } else { seen.set(key, id); }
+        }
+      });
+      return { messages, cells };
+    },
   },
 
   // ---- Processing ----

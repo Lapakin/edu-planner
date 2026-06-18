@@ -46,8 +46,10 @@ class EntityManager {
   _markCellChanged(id, field, newVal, tdEl) {
     const orig = this.originals.get(id);
     if (!orig) return;
-    const origStr = String(orig[field] ?? '');
-    const newStr  = String(newVal ?? '');
+    const col = this.config.columns.find(c => c.key === field);
+    const normalize = (v) => (col?.type === 'date' ? String(v ?? '').slice(0, 10) : String(v ?? ''));
+    const origStr = normalize(orig[field]);
+    const newStr  = normalize(newVal);
     if (!this.changes.has(id)) this.changes.set(id, {});
     if (newStr !== origStr) {
       this.changes.get(id)[field] = newVal;
@@ -437,6 +439,10 @@ class EntityManager {
       if (isNew) {
         row[col.key] = newVal;
         td.classList.add('cell-changed');
+        if (col.required && !col.readonly) {
+          const empty = newVal === null || newVal === undefined || newVal === '';
+          td.classList.toggle('cell-error', empty);
+        }
       } else {
         this._markCellChanged(id, col.key, newVal, td);
       }
@@ -497,8 +503,68 @@ class EntityManager {
     this._updateToolbar();
   }
 
+  // ── Validation ────────────────────────────────────────────────────
+  _validateBeforeSave() {
+    const errorCells = [];
+    const messages   = [];
+    const seenCells  = new Set();
+
+    const addCell = (id, field) => {
+      const key = `${id}:${field}`;
+      if (!seenCells.has(key)) { seenCells.add(key); errorCells.push({ id, field }); }
+    };
+
+    // 1. Required fields on new rows
+    for (const row of this.newRows) {
+      for (const col of this.config.columns) {
+        if (!col.required || col.readonly) continue;
+        const val = row[col.key];
+        if (val === null || val === undefined || val === '') addCell(row._tempId, col.key);
+      }
+    }
+
+    // 2. Required fields on changed existing rows (only fields the user actually edited)
+    for (const [id, delta] of this.changes) {
+      for (const col of this.config.columns) {
+        if (!col.required || col.readonly) continue;
+        if (!(col.key in delta)) continue;
+        const val = delta[col.key];
+        if (val === null || val === undefined || val === '') addCell(id, col.key);
+      }
+    }
+
+    if (errorCells.length > 0) messages.push(t('messages.fillRequired'));
+
+    // 3. Entity-specific validation (always runs, even when required-field errors exist)
+    if (this.config.validate) {
+      const effectiveRows = this.rows.map(r => {
+        const delta = this.changes.get(r.id) || {};
+        return { ...r, ...delta };
+      });
+      const result = this.config.validate(effectiveRows, this.newRows);
+      if (result && result.messages && result.messages.length > 0) {
+        result.messages.forEach(m => { if (!messages.includes(m)) messages.push(m); });
+        (result.cells || []).forEach(c => addCell(c.id, c.field));
+      }
+    }
+
+    if (messages.length > 0) return { ok: false, messages, cells: errorCells };
+    return { ok: true, messages: [], cells: [] };
+  }
+
   // ── Save ──────────────────────────────────────────────────────────
   async save() {
+    const { ok, messages, cells } = this._validateBeforeSave();
+    if (!ok) {
+      cells.forEach(({ id, field }) => {
+        const tr = this._container?.querySelector(`tr[data-id="${id}"]`);
+        const td = tr?.querySelector(`td[data-field="${field}"]`);
+        if (td) td.classList.add('cell-error');
+      });
+      Toast.error(messages[0] || t('messages.fillRequired'));
+      return;
+    }
+
     try {
       // 1. Create new rows
       if (this.newRows.length > 0) {
